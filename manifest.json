@@ -1,24 +1,13 @@
 {
   "name": "倉位管理計算機",
   "short_name": "倉位管理",
-  "description": "股票倉位風險管理工具",
-  "start_url": "/position-manager/",
+  "description": "股票倉位風險管理工具 v3",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
-  "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    {"src": "icon-192.png","sizes": "192x192","type": "image/png","purpose": "any maskable"},
+    {"src": "icon-512.png","sizes": "512x512","type": "image/png","purpose": "any maskable"}
   ]
 }
