@@ -110,11 +110,11 @@ td{padding:6px 5px;border-bottom:0.5px solid rgba(255,255,255,0.035);color:var(-
 <div class="hdr">
   <div>
     <div class="hdr-title">倉位管理</div>
-    <div class="hdr-sub" id="fx-status">載入中...</div>
+    <div class="hdr-sub" id="fx-status">匯率: 手動設定</div>
   </div>
   <div class="hdr-right">
     <div class="mv a" style="font-size:12px" id="hdr-1r">1R: —</div>
-    <div style="font-size:10px;color:var(--hint)" id="hdr-sync"><span class="sync-dot" id="sync-dot"></span><span id="sync-txt">未同步</span></div>
+    <div style="font-size:10px;color:var(--hint)" id="hdr-sync"><span class="sync-dot err" id="sync-dot"></span><span id="sync-txt">未設定 GitHub</span></div>
   </div>
 </div>
 
@@ -238,7 +238,13 @@ td{padding:6px 5px;border-bottom:0.5px solid rgba(255,255,255,0.035);color:var(-
 <!-- ═══ TAB: 收益表 ═══ -->
 <div id="tab-pnl" class="panel">
   <div class="card">
-    <div class="st">整體統計</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="st" style="margin:0">整體統計</div>
+      <div class="toggle-row" style="margin:0">
+        <button class="tbtn active" id="pnl-hkd" onclick="setPnlCcy('HKD')">HKD</button>
+        <button class="tbtn" id="pnl-usd" onclick="setPnlCcy('USD')">USD</button>
+      </div>
+    </div>
     <div class="g4" id="pnl-summary" style="margin-bottom:12px"></div>
     <div class="g2" style="margin-bottom:12px">
       <div>
@@ -369,6 +375,18 @@ let S = {
   gh: { token:'', repo:'' }
 };
 let mainChart=null, pnlChart=null;
+let _pnlCcy='HKD';
+function setPnlCcy(c){
+  _pnlCcy=c;
+  document.getElementById('pnl-hkd').classList.toggle('active',c==='HKD');
+  document.getElementById('pnl-usd').classList.toggle('active',c==='USD');
+  renderPnL();
+}
+function fmtPnlCcy(usdAmt){
+  if(_pnlCcy==='HKD') return 'HK$ '+fmt(usdAmt*S.acct.fx,0);
+  return 'US$ '+fmt(usdAmt,2);
+}
+
 let _slTiers=[];   // for new position form
 let _nc=null;      // new calc cache
 let _addMode='r';
@@ -815,6 +833,78 @@ function toggleDetails(id){
   if(row) row.style.display=row.style.display==='none'?'table-row':'none';
 }
 
+
+function renderInlineSLBlock(p){
+  if(!p.slTiers||!p.slTiers.length){
+    return `<div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:5px;padding:7px 9px;background:var(--card);border-radius:7px">
+      <div style="flex:1">
+        <label>止損價 (現: ${fmt(p.sl,2)}) 可升可降</label>
+        <div style="display:flex;gap:4px">
+          <input type="number" step="0.01" value="${p.sl}" id="isl-v-${p.id}" style="flex:1">
+          <input type="number" step="0.1" placeholder="%" style="width:55px" id="isl-pct-${p.id}" oninput="onISLPctInput(${p.id})">
+        </div>
+      </div>
+      <div id="isl-preview-${p.id}" style="font-size:11px;padding-bottom:4px;min-width:70px"></div>
+      <button class="btn btn-xs a" onclick="applyISL(${p.id})">更新止損</button>
+    </div>`;
+  }
+  return p.slTiers.map((t,i)=>`
+    <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:4px;padding:7px 9px;background:var(--card);border-radius:7px">
+      <div style="font-size:11px;color:var(--muted);width:55px">${t.pct}%<br><span style="font-size:9px">${Math.round(p.shares*t.pct/100)}股</span></div>
+      <div style="flex:1">
+        <label>止損 (現: ${fmt(t.sl,2)})</label>
+        <div style="display:flex;gap:4px">
+          <input type="number" step="0.01" value="${t.sl}" id="isl-v-${p.id}-${i}" style="flex:1">
+          <input type="number" step="0.1" placeholder="%" style="width:55px" id="isl-pct-${p.id}-${i}" oninput="onISLTierPctInput(${p.id},${i})">
+        </div>
+      </div>
+      <div id="isl-preview-${p.id}-${i}" style="font-size:11px;padding-bottom:4px;min-width:60px"></div>
+      <button class="btn btn-xs a" onclick="applyISLTier(${p.id},${i})">更新</button>
+    </div>`).join('');
+}
+function onISLPctInput(posId){
+  const p=S.pos.find(x=>x.id===posId);if(!p)return;
+  const pct=parseFloat(document.getElementById('isl-pct-'+posId).value);
+  const avgCost=p.avgCost;
+  if(pct>0){document.getElementById('isl-v-'+posId).value=fmt(avgCost*(1-pct/100),4);}
+  const newSL=parseFloat(document.getElementById('isl-v-'+posId).value);
+  if(newSL){
+    const rNew=toUSD((avgCost-newSL)*p.shares,p.ccy)/get1R();
+    const el=document.getElementById('isl-preview-'+posId);
+    if(el)el.innerHTML='<span class="'+(rNew<=0?'g':'r')+'">'+(rNew<=0?'+':'-')+fmt(Math.abs(rNew),2)+'R</span>';
+  }
+}
+function onISLTierPctInput(posId,i){
+  const p=S.pos.find(x=>x.id===posId);if(!p||!p.slTiers)return;
+  const pct=parseFloat(document.getElementById('isl-pct-'+posId+'-'+i).value);
+  if(pct>0){document.getElementById('isl-v-'+posId+'-'+i).value=fmt(p.avgCost*(1-pct/100),4);}
+  const newSL=parseFloat(document.getElementById('isl-v-'+posId+'-'+i).value);
+  if(newSL){
+    const sh=Math.round(p.shares*p.slTiers[i].pct/100);
+    const rNew=toUSD((p.avgCost-newSL)*sh,p.ccy)/get1R();
+    const el=document.getElementById('isl-preview-'+posId+'-'+i);
+    if(el)el.innerHTML='<span class="'+(rNew<=0?'g':'r')+'">'+(rNew<=0?'+':'-')+fmt(Math.abs(rNew),2)+'R</span>';
+  }
+}
+function applyISL(posId){
+  const p=S.pos.find(x=>x.id===posId);if(!p)return;
+  const newSL=parseFloat(document.getElementById('isl-v-'+posId).value);
+  if(!newSL){alert('請輸入止損價');return;}
+  p.sl=newSL;
+  p.initRisk=Math.abs(toUSD((p.avgCost-newSL)*p.shares,p.ccy));
+  lsave();updateOverview();renderPos();
+}
+function applyISLTier(posId,i){
+  const p=S.pos.find(x=>x.id===posId);if(!p||!p.slTiers)return;
+  const newSL=parseFloat(document.getElementById('isl-v-'+posId+'-'+i).value);
+  if(!newSL){alert('請輸入止損價');return;}
+  p.slTiers[i].sl=newSL;
+  let totalRisk=0;
+  p.slTiers.forEach(t=>{totalRisk+=toUSD((p.avgCost-t.sl)*Math.round(p.shares*t.pct/100),p.ccy);});
+  p.initRisk=Math.abs(totalRisk);
+  lsave();updateOverview();renderPos();
+}
+
 function renderPosDetails(p){
   const info=posRInfo(p);
   // Lots history
@@ -829,7 +919,8 @@ function renderPosDetails(p){
       <button class="btn btn-xs r" onclick="deleteClosedLot(${p.id},${i})">✕</button>
     </div>`).join(''):'';
   // SL tiers
-  const slTierHtml=p.slTiers&&p.slTiers.length?p.slTiers.map(t=>`
+  const slTierHtml=renderInlineSLBlock(p);
+  const _old=p.slTiers&&p.slTiers.length?p.slTiers.map(t=>`
     <div style="font-size:11px;padding:3px 8px;background:var(--card);border-radius:4px;margin-bottom:3px">
       ${fmt(t.pct,0)}% 股數 (${Math.round(p.shares*t.pct/100)} 股) — 止損 ${fmt(t.sl,2)} — 風險 ${fmtC(toUSD((p.avgCost-t.sl)*Math.round(p.shares*t.pct/100),p.ccy)*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy,0)}
     </div>`).join(''):'';
@@ -839,7 +930,7 @@ function renderPosDetails(p){
       <div><div class="ml">建倉初始風險</div><div class="mv r" style="font-size:13px">${fmt(p.initRisk*(S.acct.ccy==='HKD'?S.acct.fx:1),0)} ${S.acct.ccy}</div></div>
       <div><div class="ml">現持倉 R</div><div class="mv ${info.slAbove?'g':'r'}" style="font-size:13px">${info.slAbove?'+':'-'}${fmt(Math.abs(info.r),2)}R</div></div>
     </div>
-    ${slTierHtml?'<div style="margin-bottom:8px"><div class="st">分倉止損</div>'+slTierHtml+'</div>':''}
+    <div style="margin-bottom:8px"><div class="st">止損位管理</div>+renderInlineSLBlock(p)+</div>
     <div style="margin-bottom:6px"><div class="st">建倉 / 加倉記錄</div>${lotsHtml}</div>
     ${closedLotsHtml?'<div><div class="st">減倉記錄</div>'+closedLotsHtml+'</div>':''}
   `;
@@ -870,7 +961,7 @@ function showModal(type,id){
       <div class="fact">
         <button class="btn b" onclick="execCur(${id})">確認</button>
         <button class="btn" onclick="closeModal()">取消</button>
-        <button class="btn b" onclick="autoFetchPrice(${id})">自動抓取</button>
+        
       </div>
     </div></div>`;
   } else if(type==='add'){
@@ -953,11 +1044,7 @@ function calcCur(id){
   window._cur={cur};
 }
 
-async function autoFetchPrice(id){
-  const p=S.pos.find(x=>x.id===id);if(!p)return;
-  try{
-    let url,sym;
-    if(p.mkt==='HK'){sym=p.baseTick.replace(/\D/g,'').padStart(4,'0')+'.HK';}
+function autoFetchPrice(id){ alert("現價請手動輸入"); }
     else{sym=p.baseTick;}
     url='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=1d';
     const r=await fetch(url);const d=await r.json();
@@ -1079,7 +1166,7 @@ function calcSL(id){
   const newSL=parseFloat(document.getElementById('sl-new').value);
   const el=document.getElementById('sl-res');
   if(!newSL){window._slc=null;return;}
-  if(newSL<=p.sl){el.innerHTML='<div style="font-size:10px;color:var(--red)">止損只可上移</div>';window._slc=null;return;}
+  // allow moving SL in any direction
   const newRisk=toUSD((p.avgCost-newSL)*p.shares,p.ccy);
   const newR=newRisk/get1R();
   const slAbove=newSL>p.avgCost;
@@ -1098,7 +1185,7 @@ function calcSL(id){
 function execSL(id){
   if(!window._slc){alert('請輸入有效的新止損價');return;}
   const p=S.pos.find(x=>x.id===id);if(!p)return;
-  if(window._slc.newSL<=p.sl){alert('止損只可上移');return;}
+  // no restriction on SL direction
   p.sl=window._slc.newSL;
   p.initRisk=Math.abs(window._slc.newRisk);
   if(window._slc.tierUpdates.length) p.slTiers=window._slc.tierUpdates;
@@ -1171,7 +1258,7 @@ function renderPnL(){
   const totalWin=S.closed.filter(c=>c.rRealized>0).length;
   const avgR=S.closed.length?totalR/S.closed.length:0;
   document.getElementById('pnl-summary').innerHTML=
-    metric('總實現盈虧',fmtC(totalPnl*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy,0),totalPnl>=0?'g':'r')+
+    metric('總實現盈虧',fmtPnlCcy(totalPnl),totalPnl>=0?'g':'r')+
     metric('總 R',fmt(totalR,2)+'R',totalR>=0?'g':'r')+
     metric('勝率',(S.closed.length?fmt(totalWin/S.closed.length*100,1):0)+'%','b')+
     metric('平均 R',fmt(avgR,2)+'R',avgR>=0?'g':'r');
@@ -1180,10 +1267,10 @@ function renderPnL(){
   const openUnreal=S.pos.reduce((s,p)=>s+posRInfo(p).unrealUSD,0);
   const openR=S.pos.reduce((s,p)=>s+posRInfo(p).unrealR,0);
   document.getElementById('open-summary').innerHTML=
-    metric('未實現盈虧',fmtC(openUnreal*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy,0),openUnreal>=0?'g':'r')+
+    metric('未實現盈虧',fmtPnlCcy(openUnreal),openUnreal>=0?'g':'r')+
     metric('未實現 R',fmt(openR,2)+'R',openR>=0?'g':'r');
   document.getElementById('closed-summary').innerHTML=
-    metric('已實現盈虧',fmtC(totalPnl*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy,0),totalPnl>=0?'g':'r')+
+    metric('已實現盈虧',fmtPnlCcy(totalPnl),totalPnl>=0?'g':'r')+
     metric('已實現 R',fmt(totalR,2)+'R',totalR>=0?'g':'r');
 
   // months
@@ -1307,7 +1394,7 @@ async function ghSave(){
     if(sha)body.sha=sha;
     const r=await fetch(`https://api.github.com/repos/${repo}/contents/data.json`,{method:'PUT',headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
     if(r.ok){setSyncStatus('ok','已同步 '+new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}));document.getElementById('gh-status').textContent='✓ 同步成功';}
-    else{setSyncStatus('err','同步失敗');document.getElementById('gh-status').textContent='✗ 同步失敗: '+r.status;}
+    else{setSyncStatus('err','同步失敗 '+r.status);document.getElementById('gh-status').textContent='✗ '+r.status;}
   }catch(e){setSyncStatus('err','同步失敗');document.getElementById('gh-status').textContent='✗ 網絡錯誤';}
 }
 async function ghLoad(){
@@ -1351,20 +1438,13 @@ function resetAll(){
 // ═══════════════════════════════════════════════════════════════════
 // FX
 // ═══════════════════════════════════════════════════════════════════
-async function fetchFX(){
-  try{
-    const r=await fetch('https://api.frankfurter.app/latest?from=USD&to=HKD');
-    const d=await r.json();
-    if(d.rates?.HKD){
-      S.acct.fx=d.rates.HKD;
-      document.getElementById('fx').value=d.rates.HKD.toFixed(4);
-      const t='匯率 '+d.rates.HKD.toFixed(4)+' · '+new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'});
+function fetchFX(){ document.getElementById("fx-status").textContent="匯率: 手動設定，請在設定頁更新"; });
       document.getElementById('fx-status').textContent=t;
       if(document.getElementById('fx-status2'))document.getElementById('fx-status2').textContent='✓ '+t;
       updateAcct();
     }
   }catch(e){
-    document.getElementById('fx-status').textContent='使用預設匯率';
+    document.getElementById('fx-status').textContent='匯率: 手動設定';
   }
 }
 
@@ -1402,8 +1482,8 @@ if(S.gh.repo)document.getElementById('gh-repo').value=S.gh.repo;
 if(S.acct.mode==='manual'){setAcctMode('manual');document.getElementById('manual-acct-val').value=S.acct.manualVal||0;}
 onMktChange();
 updateAcct();
-fetchFX();
-setSyncStatus(S.gh.token?'ok':'err',S.gh.token?'已設定':'未設定 GitHub');
+// FX is manual
+if(S.gh.token&&S.gh.repo){setSyncStatus('ok','GitHub 已設定');}else{setSyncStatus('err','GitHub 未設定');}
 </script>
 </body>
 </html>
