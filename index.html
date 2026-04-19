@@ -1085,7 +1085,10 @@ function ghGetSha(){
 }
 
 function ghPut(sha){
-  var content = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  // Strip token before uploading — GitHub Secret Scanning blocks files containing tokens
+  var upload = JSON.parse(JSON.stringify(S));
+  upload.gh = { token:'', repo: S.gh.repo };  // keep repo name, remove token
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(upload))));
   var body = {message:'sync '+new Date().toISOString(), content:content};
   if(sha) body.sha = sha;
   return fetch(ghApi(),{
