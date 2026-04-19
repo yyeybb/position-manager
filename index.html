@@ -995,66 +995,111 @@ function gsFetch(showAlert){
 }
 
 function setSS(state,msg){ el('sdot').className='sdot '+state; el('stxt').textContent=msg; }
+function ghHeaders(){
+  var tk=val('s-ghtk')||S.gh.token;
+  return {'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'};
+}
+function ghRepo(){ return val('s-ghre')||S.gh.repo; }
+function ghApi(){ return 'https://api.github.com/repos/'+ghRepo()+'/contents/data.json'; }
+
+function ghGetSha(){
+  // Returns sha string if file exists, null if 404, throws on other errors
+  return fetch(ghApi(),{headers:ghHeaders()}).then(function(r){
+    if(r.status===404) return null;
+    if(!r.ok) throw new Error('GitHub 錯誤 '+r.status);
+    return r.json().then(function(d){ return d.sha||null; });
+  });
+}
+
+function ghPut(sha){
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  var body = {message:'sync '+new Date().toISOString(), content:content};
+  if(sha) body.sha = sha;
+  return fetch(ghApi(),{
+    method:'PUT',
+    headers:Object.assign({},ghHeaders(),{'Content-Type':'application/json'}),
+    body:JSON.stringify(body)
+  });
+}
+
 function ghSave(){
-  var tk=val('s-ghtk'),re=val('s-ghre');
+  var tk=val('s-ghtk'), re=val('s-ghre');
   if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
   S.gh={token:tk,repo:re}; lsave();
-  setSS('sp','同步中...'); el('gh-st').textContent='獲取版本中...';
-  var apiBase='https://api.github.com/repos/'+re+'/contents/data.json';
-  var headers={'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'};
-  // Step 1: always fetch latest sha fresh before pushing
-  fetch(apiBase,{headers:headers})
-    .then(function(r){
-      if(r.status===404) return {sha:null}; // file doesn't exist yet
-      if(!r.ok) throw new Error('獲取版本失敗 '+r.status);
-      return r.json();
-    })
-    .then(function(d){
-      var sha=d&&d.sha?d.sha:null;
-      var content=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-      var body={message:'sync '+new Date().toISOString(),content:content};
-      if(sha) body.sha=sha;
-      el('gh-st').textContent='上傳中...';
-      return fetch(apiBase,{method:'PUT',headers:Object.assign({},headers,{'Content-Type':'application/json'}),body:JSON.stringify(body)});
+  setSS('sp','同步中...'); el('gh-st').textContent='讀取版本...';
+
+  ghGetSha()
+    .then(function(sha){
+      el('gh-st').textContent = sha ? '更新檔案...' : '建立檔案...';
+      return ghPut(sha);
     })
     .then(function(r){
       if(r.ok){
-        setSS('ok','已同步 '+new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}));
+        var t=new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'});
+        setSS('ok','已同步 '+t);
         el('gh-st').textContent='✓ 成功';
-      } else if(r.status===409){
-        // Still conflict — sha changed between fetch and push, retry once
-        setSS('sp','重試中...');
-        el('gh-st').textContent='衝突，重試...';
-        return fetch(apiBase,{headers:headers})
-          .then(function(r2){return r2.json();})
-          .then(function(d2){
-            var content=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-            var body2={message:'sync retry '+new Date().toISOString(),content:content,sha:d2.sha};
-            return fetch(apiBase,{method:'PUT',headers:Object.assign({},headers,{'Content-Type':'application/json'}),body:JSON.stringify(body2)});
-          })
-          .then(function(r3){
-            if(r3.ok){setSS('ok','已同步（重試成功）');el('gh-st').textContent='✓ 成功';}
-            else{setSS('err','仍然失敗');el('gh-st').textContent='✗ 請先點「從 GitHub 載入」再試';}
-          });
-      } else {
-        return r.json().then(function(body){
-          setSS('err','失敗 '+r.status);
-          el('gh-st').textContent='✗ '+r.status+': '+(body.message||'');
+        return;
+      }
+      if(r.status===409){
+        // sha changed between our GET and PUT — fetch fresh sha and retry once
+        setSS('sp','衝突，重試...');
+        el('gh-st').textContent='衝突，重新獲取版本...';
+        return ghGetSha().then(function(sha2){
+          return ghPut(sha2);
+        }).then(function(r2){
+          if(r2.ok){
+            setSS('ok','已同步（重試成功）');
+            el('gh-st').textContent='✓ 成功';
+          } else {
+            return r2.text().then(function(t){
+              setSS('err','同步失敗');
+              el('gh-st').textContent='✗ 重試後仍失敗 '+r2.status;
+              console.error('ghSave retry failed:',t);
+            });
+          }
         });
       }
+      // Other error
+      return r.text().then(function(t){
+        setSS('err','失敗 '+r.status);
+        el('gh-st').textContent='✗ '+r.status;
+        console.error('ghSave failed:',t);
+      });
     })
     .catch(function(e){
       setSS('err','錯誤');
       el('gh-st').textContent='✗ '+e.message;
     });
 }
+
 function ghLoad(){
-  var tk=val('s-ghtk')||S.gh.token,re=val('s-ghre')||S.gh.repo; if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
+  var tk=val('s-ghtk')||S.gh.token, re=val('s-ghre')||S.gh.repo;
+  if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
   setSS('sp','載入中...');
-  fetch('https://api.github.com/repos/'+re+'/contents/data.json',{headers:{'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'}})
-    .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
-    .then(function(d){var raw=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));Object.assign(S,raw);lsave();setSS('ok','已載入');location.reload();})
-    .catch(function(e){setSS('err','載入失敗');alert('載入失敗: '+e);});
+  el('gh-st').textContent='載入中...';
+  fetch(ghApi(),{headers:ghHeaders()})
+    .then(function(r){
+      if(r.status===404){
+        setSS('err','找不到');
+        el('gh-st').textContent='✗ data.json 不存在，請先「儲存並同步」建立檔案';
+        return null;
+      }
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(d){
+      if(!d) return;
+      var raw=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));
+      Object.assign(S,raw);
+      lsave();
+      setSS('ok','已載入');
+      el('gh-st').textContent='✓ 載入成功，重新整理中...';
+      setTimeout(function(){ location.reload(); }, 800);
+    })
+    .catch(function(e){
+      setSS('err','失敗');
+      el('gh-st').textContent='✗ '+e.message;
+    });
 }
 function doExport(){ var b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='positions_'+today()+'.json';a.click(); }
 function doImport(e){ var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){try{Object.assign(S,JSON.parse(ev.target.result));lsave();location.reload();}catch(err){alert('格式錯誤');}};r.readAsText(f); }
