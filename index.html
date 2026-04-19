@@ -996,16 +996,56 @@ function gsFetch(showAlert){
 
 function setSS(state,msg){ el('sdot').className='sdot '+state; el('stxt').textContent=msg; }
 function ghSave(){
-  var tk=val('s-ghtk'),re=val('s-ghre'); if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
-  S.gh={token:tk,repo:re}; lsave(); setSS('sp','同步中...'); el('gh-st').textContent='同步中...';
-  var content=btoa(unescape(encodeURIComponent(JSON.stringify(S)))),sha='';
-  fetch('https://api.github.com/repos/'+re+'/contents/data.json',{headers:{'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'}})
-    .then(function(r){return r.ok?r.json():null;}).then(function(d){if(d&&d.sha)sha=d.sha;}).catch(function(){})
-    .finally(function(){
-      var body={message:'sync '+new Date().toISOString(),content:content}; if(sha)body.sha=sha;
-      fetch('https://api.github.com/repos/'+re+'/contents/data.json',{method:'PUT',headers:{'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)})
-        .then(function(r){if(r.ok){setSS('ok','已同步 '+new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}));el('gh-st').textContent='✓ 成功';}else{setSS('err','失敗');el('gh-st').textContent='✗ '+r.status;}})
-        .catch(function(){setSS('err','網絡錯誤');el('gh-st').textContent='✗ 網絡錯誤';});
+  var tk=val('s-ghtk'),re=val('s-ghre');
+  if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
+  S.gh={token:tk,repo:re}; lsave();
+  setSS('sp','同步中...'); el('gh-st').textContent='獲取版本中...';
+  var apiBase='https://api.github.com/repos/'+re+'/contents/data.json';
+  var headers={'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'};
+  // Step 1: always fetch latest sha fresh before pushing
+  fetch(apiBase,{headers:headers})
+    .then(function(r){
+      if(r.status===404) return {sha:null}; // file doesn't exist yet
+      if(!r.ok) throw new Error('獲取版本失敗 '+r.status);
+      return r.json();
+    })
+    .then(function(d){
+      var sha=d&&d.sha?d.sha:null;
+      var content=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+      var body={message:'sync '+new Date().toISOString(),content:content};
+      if(sha) body.sha=sha;
+      el('gh-st').textContent='上傳中...';
+      return fetch(apiBase,{method:'PUT',headers:Object.assign({},headers,{'Content-Type':'application/json'}),body:JSON.stringify(body)});
+    })
+    .then(function(r){
+      if(r.ok){
+        setSS('ok','已同步 '+new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}));
+        el('gh-st').textContent='✓ 成功';
+      } else if(r.status===409){
+        // Still conflict — sha changed between fetch and push, retry once
+        setSS('sp','重試中...');
+        el('gh-st').textContent='衝突，重試...';
+        return fetch(apiBase,{headers:headers})
+          .then(function(r2){return r2.json();})
+          .then(function(d2){
+            var content=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+            var body2={message:'sync retry '+new Date().toISOString(),content:content,sha:d2.sha};
+            return fetch(apiBase,{method:'PUT',headers:Object.assign({},headers,{'Content-Type':'application/json'}),body:JSON.stringify(body2)});
+          })
+          .then(function(r3){
+            if(r3.ok){setSS('ok','已同步（重試成功）');el('gh-st').textContent='✓ 成功';}
+            else{setSS('err','仍然失敗');el('gh-st').textContent='✗ 請先點「從 GitHub 載入」再試';}
+          });
+      } else {
+        return r.json().then(function(body){
+          setSS('err','失敗 '+r.status);
+          el('gh-st').textContent='✗ '+r.status+': '+(body.message||'');
+        });
+      }
+    })
+    .catch(function(e){
+      setSS('err','錯誤');
+      el('gh-st').textContent='✗ '+e.message;
     });
 }
 function ghLoad(){
