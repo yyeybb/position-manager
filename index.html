@@ -266,6 +266,36 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
     </div>
   </div>
   <div class="card">
+    <div class="st">股價自動更新 — Google Sheets</div>
+    <div style="font-size:11px;color:var(--hi);margin-bottom:8px;line-height:1.7">
+      在 Google Sheets 用 GOOGLEFINANCE 函數抓取股價，發布為 CSV 後貼上網址。<br>
+      美股格式：<code style="background:var(--c2);padding:1px 5px;border-radius:3px">=GOOGLEFINANCE("AAPL","price")</code>&nbsp;
+      港股格式：<code style="background:var(--c2);padding:1px 5px;border-radius:3px">=GOOGLEFINANCE("0700.HK","price")</code>
+    </div>
+    <div class="row" style="grid-template-columns:1fr auto;align-items:end;margin-bottom:6px">
+      <div><label>Google Sheets CSV 網址</label><input type="text" id="s-gsurl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"></div>
+      <div style="display:flex;gap:5px">
+        <button class="btn G" id="btn-gsfetch">立即更新</button>
+        <button class="btn" id="btn-gssave">儲存</button>
+      </div>
+    </div>
+    <div class="g3" style="margin-bottom:6px">
+      <div>
+        <label>自動更新間隔</label>
+        <select id="s-gsint">
+          <option value="0">停用</option>
+          <option value="5">每 5 分鐘</option>
+          <option value="15" selected>每 15 分鐘</option>
+          <option value="30">每 30 分鐘</option>
+          <option value="60">每 60 分鐘</option>
+        </select>
+      </div>
+      <div style="padding-top:1.3rem;font-size:11px;color:var(--hi)" id="gs-status">尚未設定</div>
+      <div style="padding-top:1.3rem;font-size:11px;color:var(--hi)" id="gs-lastupdate"></div>
+    </div>
+    <div id="gs-preview" style="font-size:11px;color:var(--hi)"></div>
+  </div>
+  <div class="card">
     <div class="st">GitHub 同步</div>
     <div class="row" style="grid-template-columns:1fr 1fr">
       <div><label>GitHub Token</label><input type="password" id="s-ghtk" placeholder="ghp_xxxxxxxx"></div>
@@ -312,7 +342,8 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
 var S = {
   acct: { ccy:'HKD', rPct:1, fx:7.845, mode:'auto', manualVal:0, snaps:[{date:'',bal:500000}] },
   pos:[], closed:[], history:[],
-  gh:{ token:'', repo:'' }
+  gh:{ token:'', repo:'' },
+  gs:{ url:'', interval:15 }
 };
 var MC=null, PC=null, curChart='cumr', pnlCcy='HKD';
 var newTiers=[], newCalc=null, addMode='r';
@@ -322,7 +353,7 @@ var _cur=null, _ac=null, _rc=null, _slc=null;
 function lsave(){ try{ localStorage.setItem('pmv6', JSON.stringify(S)); }catch(e){} }
 function lload(){
   try{
-    var raw = localStorage.getItem('pmv6');
+    var raw = localStorage.getItem('pmv6') || localStorage.getItem('pmv7') || localStorage.getItem('pmv8');
     if(!raw) return;
     var p = JSON.parse(raw);
     if(p.acct) S.acct = Object.assign({}, S.acct, p.acct);
@@ -330,6 +361,7 @@ function lload(){
     if(p.closed) S.closed = p.closed;
     if(p.history) S.history = p.history;
     if(p.gh) S.gh = p.gh;
+    if(p.gs) S.gs = p.gs;
   }catch(e){}
 }
 
@@ -851,6 +883,117 @@ function buildWinrate(){ var m={};S.closed.forEach(function(c){var k=ymm(c.close
 function updateMC(){ var ctx=el('mc').getContext('2d'); if(MC){MC.destroy();MC=null;} if(!S.closed.length&&curChart!=='openr')return; if(curChart==='openr'&&!S.pos.length)return; var cfg=curChart==='cumr'?buildCumR():curChart==='monthly'?buildMonthly():curChart==='openr'?buildOpenR():buildWinrate(); MC=new Chart(ctx,cfg); }
 
 // ── GitHub ────────────────────────────────────────────
+// ── Google Sheets Price Feed ───────────────────────────
+var gsTimer = null;
+
+function gsSave(){
+  S.gs = S.gs || {};
+  S.gs.url = val('s-gsurl').trim();
+  S.gs.interval = parseInt(val('s-gsint')) || 0;
+  lsave();
+  gsStartTimer();
+  el('gs-status').textContent = S.gs.url ? '已儲存' : '尚未設定';
+  el('gs-status').style.color = S.gs.url ? 'var(--G)' : 'var(--hi)';
+}
+
+function gsStartTimer(){
+  if(gsTimer){ clearInterval(gsTimer); gsTimer = null; }
+  var mins = parseInt(val('s-gsint')) || 0;
+  if(mins > 0 && S.gs && S.gs.url){
+    gsTimer = setInterval(function(){ gsFetch(false); }, mins * 60000);
+    el('gs-status').textContent = '自動更新: 每 ' + mins + ' 分鐘';
+    el('gs-status').style.color = 'var(--G)';
+  }
+}
+
+function gsFetch(showAlert){
+  showAlert = showAlert !== false;
+  var url = val('s-gsurl').trim() || (S.gs && S.gs.url) || '';
+  if(!url){ if(showAlert) alert('請先填寫 Google Sheets CSV 網址'); return; }
+
+  el('gs-status').textContent = '更新中...';
+  el('gs-status').style.color = 'var(--A)';
+
+  // Use a CORS proxy to fetch the CSV
+  var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+
+  fetch(proxyUrl)
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(csv){
+      var rows = csv.trim().split('\n').slice(1); // skip header row
+      var priceMap = {};
+      var parsed = 0;
+      rows.forEach(function(row){
+        var cols = row.split(',');
+        if(cols.length < 3) return;
+        var ticker = cols[0].trim().replace(/^"|"$/g,'').toUpperCase();
+        var market = cols[1].trim().replace(/^"|"$/g,'').toUpperCase();
+        var price  = parseFloat(cols[2].trim().replace(/^"|"$/g,''));
+        if(ticker && !isNaN(price) && price > 0){
+          priceMap[ticker] = price;
+          // Also store with market suffix for matching
+          priceMap[ticker + '_' + market] = price;
+          parsed++;
+        }
+      });
+
+      if(parsed === 0){
+        el('gs-status').textContent = '⚠ 無法解析資料，請檢查試算表格式';
+        el('gs-status').style.color = 'var(--R)';
+        return;
+      }
+
+      // Update open positions
+      var updated = 0;
+      S.pos.forEach(function(p){
+        var base = p.baseTick ? p.baseTick.toUpperCase() : p.tick.replace(/\s*\d+$/, '').toUpperCase();
+        var price = priceMap[base + '_' + p.mkt] || priceMap[base];
+        if(price && price > 0){
+          p.curPrice = price;
+          updated++;
+        }
+      });
+
+      lsave();
+
+      var now = new Date().toLocaleTimeString('zh-HK', {hour:'2-digit', minute:'2-digit'});
+      el('gs-lastupdate').textContent = '上次更新: ' + now;
+      el('gs-lastupdate').style.color = 'var(--G)';
+      el('gs-status').textContent = '✓ 已更新 ' + updated + '/' + S.pos.length + ' 個持倉';
+      el('gs-status').style.color = 'var(--G)';
+
+      // Show preview table
+      el('gs-preview').innerHTML = '<div style="margin-top:8px"><div class="st">試算表數據預覽</div>' +
+        rows.slice(0,8).map(function(row){
+          var cols = row.split(',');
+          if(cols.length < 3) return '';
+          var tk = cols[0].replace(/^"|"$/g,'');
+          var mk = cols[1].replace(/^"|"$/g,'');
+          var pr = cols[2].replace(/^"|"$/g,'');
+          return '<div style="display:flex;gap:10px;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--bd)">' +
+            '<span style="width:60px;font-weight:700">' + tk + '</span>' +
+            '<span style="width:40px;color:var(--hi)">' + mk + '</span>' +
+            '<span style="color:var(--G)">' + pr + '</span></div>';
+        }).join('') + '</div>';
+
+      // Refresh positions view if active
+      updateOv();
+      if(el('tab-pos').classList.contains('on')) renderPos();
+    })
+    .catch(function(err){
+      el('gs-status').textContent = '✗ 抓取失敗: ' + err.message;
+      el('gs-status').style.color = 'var(--R)';
+      // Fallback: try direct fetch (works if no CORS issue)
+      fetch(url)
+        .then(function(r){ return r.text(); })
+        .then(function(csv){ el('gs-status').textContent = '重試成功'; gsFetch(false); })
+        .catch(function(){ });
+    });
+}
+
 function setSS(state,msg){ el('sdot').className='sdot '+state; el('stxt').textContent=msg; }
 function ghSave(){
   var tk=val('s-ghtk'),re=val('s-ghre'); if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
@@ -948,6 +1091,8 @@ document.addEventListener('click', function(e) {
   if(bid==='btn-filter'){renderPos();return;}
   if(bid==='btn-clearfilter'){clearFilter();return;}
   if(bid==='btn-addsnap'){addSnap();return;}
+  if(bid==='btn-gsfetch'){gsFetch(true);return;}
+  if(bid==='btn-gssave'){gsSave();return;}
   if(bid==='btn-ghsave'){ghSave();return;}
   if(bid==='btn-ghload'){ghLoad();return;}
   if(bid==='btn-export'){doExport();return;}
@@ -991,6 +1136,16 @@ el('s-bal').value=snap.bal; el('s-ccy').value=S.acct.ccy; el('s-rp').value=S.acc
 el('s-dt').value=today(); el('n-dt').value=today();
 if(S.gh.token)el('s-ghtk').value=S.gh.token;
 if(S.gh.repo)el('s-ghre').value=S.gh.repo;
+// Google Sheets init
+if(S.gs && S.gs.url){
+  el('s-gsurl').value = S.gs.url;
+  if(S.gs.interval) el('s-gsint').value = S.gs.interval;
+  el('gs-status').textContent = '已設定';
+  el('gs-status').style.color = 'var(--G)';
+  gsStartTimer();
+  // Auto-fetch on load
+  setTimeout(function(){ gsFetch(false); }, 2000);
+}
 if(S.acct.mode==='manual'){setAcctMode('manual');if(el('s-man'))el('s-man').value=S.acct.manualVal||0;}
 setSS(S.gh.token&&S.gh.repo?'ok':'err',S.gh.token&&S.gh.repo?'GitHub 已設定':'GitHub 未設定');
 el('hdr-fx').textContent='匯率: 1 USD = '+fmt(S.acct.fx,4)+' HKD';
