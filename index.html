@@ -344,7 +344,7 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
 var S = {
   acct: { ccy:'HKD', rPct:1, fx:7.845, mode:'auto', manualVal:0, snaps:[{date:'',bal:500000}] },
   pos:[], closed:[], history:[],
-  gh:{ token:'', repo:'' },
+  gh:{ repo:'' },
   gs:{ url:'', interval:15 }
 };
 var MC=null, PC=null, curChart='cumr', pnlCcy='HKD';
@@ -352,7 +352,17 @@ var newTiers=[], newCalc=null, addMode='r';
 var _cur=null, _ac=null, _rc=null, _slc=null;
 
 // ── Storage ────────────────────────────────────────────
-function lsave(){ try{ localStorage.setItem('pmv6', JSON.stringify(S)); }catch(e){} }
+// Token stored separately and NEVER included in S (prevents GitHub Secret Scanning rejection)
+function tkGet(){ try{ return localStorage.getItem('_pmtk')||''; }catch(e){ return ''; } }
+function tkSet(v){ try{ localStorage.setItem('_pmtk',v); }catch(e){} }
+function lsave(){
+  try{
+    // Ensure token is never in S before saving
+    var out = JSON.parse(JSON.stringify(S));
+    delete out.gh.token;
+    localStorage.setItem('pmv6', JSON.stringify(out));
+  }catch(e){}
+}
 function lload(){
   try{
     var raw = localStorage.getItem('pmv6') || localStorage.getItem('pmv7') || localStorage.getItem('pmv8');
@@ -362,8 +372,10 @@ function lload(){
     if(p.pos) S.pos = p.pos;
     if(p.closed) S.closed = p.closed;
     if(p.history) S.history = p.history;
-    if(p.gh) S.gh = p.gh;
+    if(p.gh) S.gh = { repo: p.gh.repo||'' }; // only restore repo, not token
     if(p.gs) S.gs = p.gs;
+    // Migrate old token if it was accidentally stored in S
+    if(p.gh && p.gh.token && !tkGet()) { tkSet(p.gh.token); }
   }catch(e){}
 }
 
@@ -1004,7 +1016,7 @@ function ghDetail(msg){
 }
 
 function ghDiag(){
-  var tk=val('s-ghtk')||S.gh.token, re=val('s-ghre')||S.gh.repo;
+  var tk=val('s-ghtk')||tkGet(), re=val('s-ghre')||S.gh.repo;
   if(!tk||!re){alert('請先填寫 Token 和 Repository');return;}
   setSS('sp','診斷中...');
   el('gh-st').textContent='診斷中...';
@@ -1069,7 +1081,7 @@ function ghDiag(){
 }
 
 function ghHeaders(){
-  var tk=val('s-ghtk')||S.gh.token;
+  var tk = val('s-ghtk') || tkGet();
   return {'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'};
 }
 function ghRepo(){ return val('s-ghre')||S.gh.repo; }
@@ -1085,10 +1097,8 @@ function ghGetSha(){
 }
 
 function ghPut(sha){
-  // Strip token before uploading — GitHub Secret Scanning blocks files containing tokens
-  var upload = JSON.parse(JSON.stringify(S));
-  upload.gh = { token:'', repo: S.gh.repo };  // keep repo name, remove token
-  var content = btoa(unescape(encodeURIComponent(JSON.stringify(upload))));
+  // Token is never stored in S, so safe to upload directly
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
   var body = {message:'sync '+new Date().toISOString(), content:content};
   if(sha) body.sha = sha;
   return fetch(ghApi(),{
@@ -1101,7 +1111,8 @@ function ghPut(sha){
 function ghSave(){
   var tk=val('s-ghtk'), re=val('s-ghre');
   if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
-  S.gh={token:tk,repo:re}; lsave();
+  tkSet(tk);           // store token separately, never in S
+  S.gh={repo:re}; lsave();
   setSS('sp','同步中...'); el('gh-st').textContent='讀取版本...';
 
   ghGetSha()
@@ -1152,7 +1163,7 @@ function ghSave(){
 }
 
 function ghLoad(){
-  var tk=val('s-ghtk')||S.gh.token, re=val('s-ghre')||S.gh.repo;
+  var tk=val('s-ghtk')||tkGet(), re=val('s-ghre')||S.gh.repo;
   if(!tk||!re){alert('請填寫 GitHub Token 和 Repository');return;}
   setSS('sp','載入中...');
   el('gh-st').textContent='載入中...';
@@ -1299,7 +1310,7 @@ lload();
 var snap=latestSnap();
 el('s-bal').value=snap.bal; el('s-ccy').value=S.acct.ccy; el('s-rp').value=S.acct.rPct; el('s-fx').value=S.acct.fx;
 el('s-dt').value=today(); el('n-dt').value=today();
-if(S.gh.token)el('s-ghtk').value=S.gh.token;
+var _tk=tkGet(); if(_tk)el('s-ghtk').value=_tk;
 if(S.gh.repo)el('s-ghre').value=S.gh.repo;
 // Google Sheets init
 if(S.gs && S.gs.url){
@@ -1312,7 +1323,7 @@ if(S.gs && S.gs.url){
   setTimeout(function(){ gsFetch(false); }, 2000);
 }
 if(S.acct.mode==='manual'){setAcctMode('manual');if(el('s-man'))el('s-man').value=S.acct.manualVal||0;}
-setSS(S.gh.token&&S.gh.repo?'ok':'err',S.gh.token&&S.gh.repo?'GitHub 已設定':'GitHub 未設定');
+setSS(tkGet()&&S.gh.repo?'ok':'err',tkGet()&&S.gh.repo?'GitHub 已設定':'GitHub 未設定');
 el('hdr-fx').textContent='匯率: 1 USD = '+fmt(S.acct.fx,4)+' HKD';
 onMktChg();
 renderAcctMet(); renderNowMet(); updateOv();
