@@ -298,14 +298,16 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
   <div class="card">
     <div class="st">GitHub 同步</div>
     <div class="row" style="grid-template-columns:1fr 1fr">
-      <div><label>GitHub Token</label><input type="password" id="s-ghtk" placeholder="ghp_xxxxxxxx"></div>
-      <div><label>Repository</label><input type="text" id="s-ghre" placeholder="yourname/position-manager"></div>
+      <div><label>GitHub Token (ghp_...)</label><input type="password" id="s-ghtk" placeholder="ghp_xxxxxxxx"></div>
+      <div><label>Repository (用戶名/repo)</label><input type="text" id="s-ghre" placeholder="yourname/position-manager"></div>
     </div>
     <div class="acts">
       <button class="btn B" id="btn-ghsave">儲存並同步</button>
       <button class="btn" id="btn-ghload">從 GitHub 載入</button>
-      <span id="gh-st" style="font-size:11px;color:var(--hi)"></span>
+      <button class="btn" id="btn-ghdiag">診斷</button>
     </div>
+    <div id="gh-st" style="font-size:11px;color:var(--hi);margin-top:6px"></div>
+    <div id="gh-detail" style="font-size:10px;color:var(--hi);margin-top:4px;word-break:break-all;display:none"></div>
   </div>
   <div class="card">
     <div class="st">資料管理</div>
@@ -995,6 +997,77 @@ function gsFetch(showAlert){
 }
 
 function setSS(state,msg){ el('sdot').className='sdot '+state; el('stxt').textContent=msg; }
+function ghDetail(msg){
+  var d=el('gh-detail');
+  if(msg){d.textContent=msg;d.style.display='block';d.style.color='var(--R)';}
+  else{d.style.display='none';}
+}
+
+function ghDiag(){
+  var tk=val('s-ghtk')||S.gh.token, re=val('s-ghre')||S.gh.repo;
+  if(!tk||!re){alert('請先填寫 Token 和 Repository');return;}
+  setSS('sp','診斷中...');
+  el('gh-st').textContent='診斷中...';
+  ghDetail('');
+
+  // Test 1: check token works
+  fetch('https://api.github.com/user',{headers:ghHeaders()})
+    .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+    .then(function(res){
+      if(res.status===401){
+        setSS('err','Token 無效');
+        el('gh-st').textContent='✗ Token 無效或已過期，請重新生成';
+        ghDetail('401 Unauthorized: '+JSON.stringify(res.data));
+        return;
+      }
+      var user = res.data.login||'unknown';
+      el('gh-st').textContent='Token OK ('+user+')，檢查 repo...';
+
+      // Test 2: check repo exists and accessible
+      fetch('https://api.github.com/repos/'+re,{headers:ghHeaders()})
+        .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+        .then(function(res2){
+          if(res2.status===404){
+            setSS('err','找不到 Repository');
+            el('gh-st').textContent='✗ Repository 不存在: '+re;
+            ghDetail('請確認格式為「用戶名/repo名」，例如 johnsmith/position-manager');
+            return;
+          }
+          if(res2.status===403){
+            setSS('err','Token 無 repo 權限');
+            el('gh-st').textContent='✗ Token 沒有 repo 權限';
+            ghDetail('請重新生成 Token 並勾選完整 repo 權限（不是 public_repo）');
+            return;
+          }
+          var isPrivate = res2.data.private;
+          var permissions = res2.data.permissions||{};
+          el('gh-st').textContent='Repo OK ('+(isPrivate?'私人':'公開')+')，檢查 data.json...';
+
+          // Test 3: check if data.json exists
+          fetch(ghApi(),{headers:ghHeaders()})
+            .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+            .then(function(res3){
+              if(res3.status===404){
+                setSS('ok','一切正常，data.json 尚未建立');
+                el('gh-st').textContent='✓ 診斷通過，請點「儲存並同步」建立 data.json';
+                ghDetail('Token: ✓  Repo: ✓  data.json: 不存在（首次同步會自動建立）');
+              } else if(res3.status===200){
+                setSS('ok','一切正常');
+                el('gh-st').textContent='✓ 診斷通過，sha='+res3.data.sha.slice(0,8)+'...';
+                ghDetail('Token: ✓  Repo: ✓  data.json: ✓  sha='+res3.data.sha);
+              } else {
+                setSS('err','data.json 異常 '+res3.status);
+                ghDetail(JSON.stringify(res3.data).slice(0,200));
+              }
+            });
+        });
+    })
+    .catch(function(e){
+      setSS('err','網絡錯誤');
+      el('gh-st').textContent='✗ 網絡錯誤: '+e.message;
+    });
+}
+
 function ghHeaders(){
   var tk=val('s-ghtk')||S.gh.token;
   return {'Authorization':'token '+tk,'Accept':'application/vnd.github.v3+json'};
@@ -1054,6 +1127,7 @@ function ghSave(){
             return r2.text().then(function(t){
               setSS('err','同步失敗');
               el('gh-st').textContent='✗ 重試後仍失敗 '+r2.status;
+              ghDetail('錯誤: '+t.slice(0,300));
               console.error('ghSave retry failed:',t);
             });
           }
@@ -1063,12 +1137,14 @@ function ghSave(){
       return r.text().then(function(t){
         setSS('err','失敗 '+r.status);
         el('gh-st').textContent='✗ '+r.status;
+        ghDetail('錯誤: '+t.slice(0,300));
         console.error('ghSave failed:',t);
       });
     })
     .catch(function(e){
       setSS('err','錯誤');
       el('gh-st').textContent='✗ '+e.message;
+      ghDetail(e.stack||'');
     });
 }
 
@@ -1178,8 +1254,9 @@ document.addEventListener('click', function(e) {
   if(bid==='btn-addsnap'){addSnap();return;}
   if(bid==='btn-gsfetch'){gsFetch(true);return;}
   if(bid==='btn-gssave'){gsSave();return;}
-  if(bid==='btn-ghsave'){ghSave();return;}
-  if(bid==='btn-ghload'){ghLoad();return;}
+  if(bid==='btn-ghsave'){ghDetail('');ghSave();return;}
+  if(bid==='btn-ghload'){ghDetail('');ghLoad();return;}
+  if(bid==='btn-ghdiag'){ghDiag();return;}
   if(bid==='btn-export'){doExport();return;}
   if(bid==='btn-import'){el('imp-f').click();return;}
   if(bid==='btn-reset'){doReset();return;}
