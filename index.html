@@ -81,6 +81,7 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
 .ch{position:relative;height:200px}
 .clickrow{cursor:pointer}.clickrow:hover td{background:rgba(255,255,255,.015)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -398,8 +399,8 @@ function nowAcctUSD(){
 }
 function posInfo(p){
   var oneR=get1R(), riskUSD=0;
-  if(p.slTiers&&p.slTiers.length){ p.slTiers.forEach(function(t){ riskUSD+=toUSD((p.avgCost-t.sl)*Math.round(p.shares*t.pct/100),p.ccy); }); }
-  else{ riskUSD=toUSD((p.avgCost-p.sl)*p.shares,p.ccy); }
+  var tiers=getShareTiers(p);
+  riskUSD=tiers.reduce(function(s,t){ return s+toUSD((p.avgCost-t.sl)*t.shares,p.ccy); },0);
   var unrealUSD=p.curPrice>0?toUSD((p.curPrice-p.avgCost)*p.shares,p.ccy):0;
   return{r:riskUSD/oneR, riskUSD:riskUSD, unrealUSD:unrealUSD, unrealR:unrealUSD/oneR, slAbove:riskUSD<0};
 }
@@ -665,26 +666,79 @@ function buildExpand(p){
     (clH?'<div><div class="st">減倉記錄</div>'+clH+'</div>':'');
 }
 function buildInlineSL(p){
-  if(!p.slTiers||!p.slTiers.length){
-    return '<div class="sltr">'+
-      '<div style="flex:1"><label>止損價 (現: '+fmt(p.sl,2)+') — 可升可降</label><div style="display:flex;gap:4px">'+
-        '<input type="number" step="0.01" value="'+p.sl+'" id="isl-'+p.id+'" style="flex:1">'+
-        '<input type="number" step="0.1" placeholder="%" id="islp-'+p.id+'" style="width:55px" data-islpct="'+p.id+'">'+
-      '</div></div>'+
-      '<div id="islr-'+p.id+'" style="font-size:11px;padding-top:14px;min-width:70px"></div>'+
-      '<button class="btn A xs" data-applyisl="'+p.id+'" style="margin-top:14px">更新</button></div>';
-  }
-  return p.slTiers.map(function(t,i){
-    return '<div class="sltr">'+
-      '<div style="font-size:11px;color:var(--mu);width:55px">'+t.pct+'%<br><span style="font-size:9px">'+Math.round(p.shares*t.pct/100)+'股</span></div>'+
-      '<div style="flex:1"><label>止損 (現: '+fmt(t.sl,2)+')</label><div style="display:flex;gap:4px">'+
-        '<input type="number" step="0.01" value="'+t.sl+'" id="islt-'+p.id+'-'+i+'" style="flex:1">'+
+  // Convert existing tiers to share-based format for display
+  var tiers = getShareTiers(p);
+  var totalR = calcTierR(p, tiers);
+  var rCls = totalR <= 0 ? 'G' : 'R';
+  var rSign = totalR <= 0 ? '+' : '-';
+
+  var tiersHtml = tiers.map(function(t,i){
+    var rT = toUSD((p.avgCost - t.sl) * t.shares, p.ccy) / get1R();
+    var rTcls = rT <= 0 ? 'G' : 'R';
+    return '<div class="sltr" style="align-items:center">'+
+      '<div style="width:60px;text-align:center">'+
+        '<div style="font-size:11px;font-weight:700">'+fmt(t.shares,0)+'股</div>'+
+        '<div style="font-size:9px;color:var(--hi)">'+fmt(t.shares/p.shares*100,0)+'%</div>'+
+      '</div>'+
+      '<div style="flex:1"><label>止損價</label><div style="display:flex;gap:4px">'+
+        '<input type="number" step="0.01" value="'+t.sl+'" id="islt-'+p.id+'-'+i+'" style="flex:1" data-isltid="'+p.id+'-'+i+'">'+
         '<input type="number" step="0.1" placeholder="%" id="isltp-'+p.id+'-'+i+'" style="width:55px" data-isltpct="'+p.id+'-'+i+'">'+
       '</div></div>'+
-      '<div id="isltr-'+p.id+'-'+i+'" style="font-size:11px;padding-top:14px;min-width:60px"></div>'+
-      '<button class="btn A xs" data-applyislt="'+p.id+'-'+i+'" style="margin-top:14px">更新</button></div>';
+      '<div style="font-size:10px;min-width:55px;text-align:right;padding-top:14px" id="isltr-'+p.id+'-'+i+'" class="'+rTcls+'">'+
+        rSign+fmt(Math.abs(rT),2)+'R'+
+      '</div>'+
+      '<button class="btn A xs" data-applyislt="'+p.id+'-'+i+'" style="margin-top:12px">更新</button>'+
+      '<button class="btn R xs" data-rmislt="'+p.id+'-'+i+'" style="margin-top:12px">✕</button>'+
+    '</div>';
   }).join('');
+
+  return '<div class="g2" style="margin-bottom:6px">'+
+    met('持倉 R', rSign+fmt(Math.abs(totalR),2)+'R', rCls)+
+    met('總止損股數', fmt(tiers.reduce(function(s,t){return s+t.shares;},0),0)+' / '+fmt(p.shares,0)+' 股', 'b')+
+  '</div>'+
+  tiersHtml+
+  '<div style="display:flex;gap:6px;margin-top:6px">'+
+    '<button class="btn B xs" data-addislt="'+p.id+'">+ 新增止損段</button>'+
+    '<button class="btn" data-splitislt="'+p.id+'" style="font-size:10px">平均分配</button>'+
+  '</div>'+
+  '<div style="font-size:10px;color:var(--hi);margin-top:4px">股數總和須等於 '+fmt(p.shares,0)+' 股</div>';
 }
+
+// Convert position slTiers (% based) or single sl to share-based tiers
+function getShareTiers(p){
+  if(p.slTiers && p.slTiers.length){
+    return p.slTiers.map(function(t){
+      return { shares: t.shares || Math.round(p.shares * (t.pct||0) / 100), sl: t.sl, pct: t.pct||0 };
+    });
+  }
+  return [{ shares: p.shares, sl: p.sl, pct: 100 }];
+}
+
+// Save share-based tiers back to position
+function saveShareTiers(p, tiers){
+  var total = tiers.reduce(function(s,t){return s+t.shares;},0);
+  p.slTiers = tiers.map(function(t){
+    return { shares: t.shares, sl: t.sl, pct: total > 0 ? Math.round(t.shares/total*100) : 0 };
+  });
+  // Update main sl to weighted average
+  if(tiers.length === 1){ p.sl = tiers[0].sl; }
+  else {
+    var wsl = tiers.reduce(function(s,t){return s+t.sl*t.shares;},0);
+    p.sl = total > 0 ? wsl/total : tiers[0].sl;
+  }
+  // Recompute initRisk
+  p.initRisk = Math.abs(calcRiskUSD(p, tiers));
+}
+
+function calcRiskUSD(p, tiers){
+  var t = tiers || getShareTiers(p);
+  return t.reduce(function(s,tier){ return s + toUSD((p.avgCost - tier.sl) * tier.shares, p.ccy); }, 0);
+}
+
+function calcTierR(p, tiers){
+  return calcRiskUSD(p, tiers) / get1R();
+}
+
 function clearFilter(){ ['f-fr','f-to','f-tk'].forEach(function(id){el(id).value='';}); renderPos(); }
 
 // ── Modals ─────────────────────────────────────────────
@@ -743,28 +797,41 @@ function showModal(type,id){
       '<div class="acts"><button class="btn G" data-dored="'+id+'">確認減倉</button><button class="btn" data-closemodal="1">取消</button></div></div></div>';
     ['m-rpx','m-rsh'].forEach(function(eid){ bindModalInput(eid,function(){calcRed(id);}); });
   } else if(type==='sl'){
-    var tierInputs='';
-    if(p.slTiers&&p.slTiers.length){
-      tierInputs='<div style="margin-top:8px"><div class="st">分倉止損</div>'+
-        p.slTiers.map(function(t,i){return '<div class="sltr"><div style="font-size:11px;color:var(--mu);width:50px">'+t.pct+'%</div>'+
-          '<div style="flex:1"><label>止損 (現: '+fmt(t.sl,2)+')</label><div style="display:flex;gap:4px">'+
-            '<input type="number" step="0.01" id="slt-'+i+'" value="'+t.sl+'" style="flex:1">'+
-            '<input type="number" step="0.1" placeholder="%" id="sltp-'+i+'" style="width:50px">'+
-          '</div></div></div>';}).join('')+'</div>';
-    }
-    area.innerHTML='<div class="mbg"><div class="mbox">'+
-      '<div class="mtitle">修改止損 — '+p.tick+'</div>'+
-      '<div class="msub">均價: '+fmt(p.avgCost,3)+' | 現止損: '+fmt(p.sl,2)+' | 現 R: '+(info.slAbove?'+':'')+fmt(Math.abs(info.r),2)+'R<br>止損可升可降</div>'+
-      '<div class="g2" style="margin-bottom:8px">'+
-        '<div><label>新止損價</label><div style="display:flex;gap:4px">'+
-          '<input type="number" id="m-sl" step="0.01" value="'+p.sl+'" style="flex:1">'+
-          '<input type="number" id="m-slp" step="0.1" placeholder="%" style="width:50px">'+
+    var tiers = getShareTiers(p);
+    var totalR = calcTierR(p, tiers);
+    var rSign = totalR<=0?'+':'-';
+    var tiersHtml = tiers.map(function(t,i){
+      return '<div class="sltr" style="align-items:center">'+
+        '<div style="width:65px"><label>股數</label><input type="number" id="mslt-sh-'+i+'" value="'+t.shares+'" step="1" min="1" style="width:60px"></div>'+
+        '<div style="flex:1"><label>止損價</label><div style="display:flex;gap:4px">'+
+          '<input type="number" step="0.01" id="mslt-sl-'+i+'" value="'+t.sl+'" style="flex:1" oninput="calcModalSL('+id+')">'+
+          '<input type="number" step="0.1" placeholder="%" id="mslt-pct-'+i+'" style="width:52px" oninput="onModalSLTierPct2('+id+','+i+')">'+
         '</div></div>'+
-        '<div id="m-sl-res" style="padding-top:1.2rem"></div></div>'+
-      tierInputs+
-      '<div class="acts"><button class="btn A" data-dosl="'+id+'">確認修改</button><button class="btn" data-closemodal="1">取消</button></div></div></div>';
-    bindModalInput('m-sl',function(){calcSL(id);}); bindModalInput('m-slp',function(){onSLP(id);});
-    if(p.slTiers&&p.slTiers.length){ p.slTiers.forEach(function(t,i){ bindModalInput('slt-'+i,function(){calcSL(id);}); bindModalInput('sltp-'+i,function(){onSLTP(id,i,val('sltp-'+i));}); }); }
+        '<div id="mslt-r-'+i+'" style="font-size:10px;min-width:50px;text-align:right;padding-top:14px"></div>'+
+        '<button class="btn R xs" onclick="removeModalTier('+id+','+i+')" style="margin-top:12px">✕</button>'+
+      '</div>';
+    }).join('');
+    area.innerHTML='<div class="mbg"><div class="mbox" style="max-width:620px">'+
+      '<div class="mtitle">止損管理 — '+p.tick+'</div>'+
+      '<div class="msub">均價: '+fmt(p.avgCost,3)+' '+p.ccy+' | 持 '+fmt(p.shares,0)+' 股<br>'+
+        '現合計 R: <span id="msl-total-r" style="font-weight:700">'+rSign+fmt(Math.abs(totalR),2)+'R</span> &nbsp;'+
+        '止損股數: <span id="msl-total-sh">'+fmt(tiers.reduce(function(s,t){return s+t.shares;},0),0)+'</span> / '+fmt(p.shares,0)+'</div>'+
+      '<div id="msl-tiers">'+tiersHtml+'</div>'+
+      '<div class="acts" style="margin-top:6px">'+
+        '<button class="btn B xs" onclick="addModalTier('+id+')">+ 新增止損段</button>'+
+        '<button class="btn xs" onclick="splitModalTiers('+id+')">平均分配</button>'+
+        '<span id="msl-warn" style="font-size:10px;color:var(--R)"></span>'+
+      '</div>'+
+      '<div class="acts" style="margin-top:10px">'+
+        '<button class="btn A" data-dosl="'+id+'">確認更新</button>'+
+        '<button class="btn" data-closemodal="1">取消</button>'+
+      '</div>'+
+    '</div></div>';
+    // Bind inputs
+    tiers.forEach(function(t,i){
+      bindModalInput('mslt-sh-'+i, function(){calcModalSL(id);});
+    });
+    setTimeout(function(){calcModalSL(id);},50);
   }
 }
 function bindModalInput(id,fn){ var e=el(id); if(e) e.addEventListener('input',fn); }
@@ -829,25 +896,119 @@ function doRed(id){
   } else { p.shares=c.rem; p.initRisk=Math.abs(toUSD((p.avgCost-p.sl)*c.rem,p.ccy)); }
   lsave(); closeModal(); updateOv(); renderPos();
 }
-function onSLP(id){
-  var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
-  var pct=numVal('m-slp'); if(pct>0)el('m-sl').value=fmt(p.avgCost*(1-pct/100),4); calcSL(id);
+function onSLP(id){ /* legacy - unused */ }
+function onSLTP(id,i,v){ /* legacy - unused */ }
+
+// ── Modal SL tier management ───────────────────────────
+function readModalTiers(posId){
+  var tiers=[], i=0;
+  while(el('mslt-sh-'+i)){
+    var sh=parseInt(val('mslt-sh-'+i))||0;
+    var sl=parseFloat(val('mslt-sl-'+i))||0;
+    if(sh>0&&sl>0) tiers.push({shares:sh,sl:sl});
+    i++;
+  }
+  return tiers;
 }
-function onSLTP(id,i,v){ var p=S.pos.find(function(x){return x.id===id;}); if(!p)return; var pct=parseFloat(v); if(pct>0&&el('slt-'+i))el('slt-'+i).value=fmt(p.avgCost*(1-pct/100),4); calcSL(id); }
-function calcSL(id){
+
+function calcModalSL(id){
   var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
-  var nsl=numVal('m-sl'),res=el('m-sl-res'); if(!nsl){_slc=null;return;}
-  var nr=toUSD((p.avgCost-nsl)*p.shares,p.ccy)/get1R(),above=nsl>p.avgCost;
-  if(res)res.innerHTML='<div style="font-size:11px">新 R: <strong class="'+(above?'G':'R')+'">'+(above?'+':'-')+fmt(Math.abs(nr),2)+'R</strong></div>';
-  var tiers=[];
-  if(p.slTiers&&p.slTiers.length){ p.slTiers.forEach(function(t,i){ var e2=el('slt-'+i); tiers.push({pct:t.pct,sl:e2?parseFloat(e2.value)||t.sl:t.sl}); }); }
-  _slc={nsl:nsl,nr:nr,tiers:tiers};
+  var i=0, totalSh=0, totalRisk=0;
+  while(el('mslt-sh-'+i)){
+    var sh=parseInt(val('mslt-sh-'+i))||0;
+    var sl=parseFloat(val('mslt-sl-'+i))||0;
+    // handle % input
+    var pctEl=el('mslt-pct-'+i);
+    // update R preview for this tier
+    if(sh>0&&sl>0){
+      var rT=toUSD((p.avgCost-sl)*sh,p.ccy)/get1R();
+      var rEl=el('mslt-r-'+i);
+      if(rEl) rEl.innerHTML='<span class="'+(rT<=0?'G':'R')+'">'+(rT<=0?'+':'-')+fmt(Math.abs(rT),2)+'R</span>';
+      totalRisk+=toUSD((p.avgCost-sl)*sh,p.ccy);
+      totalSh+=sh;
+    }
+    i++;
+  }
+  var totalR=totalRisk/get1R();
+  var rSign=totalR<=0?'+':'-';
+  var warnEl=el('msl-warn'), totalREl=el('msl-total-r'), totalShEl=el('msl-total-sh');
+  if(totalREl) totalREl.innerHTML='<span class="'+(totalR<=0?'G':'R')+'">'+rSign+fmt(Math.abs(totalR),2)+'R</span>';
+  if(totalShEl) totalShEl.textContent=fmt(totalSh,0);
+  if(warnEl){
+    if(totalSh!==p.shares) warnEl.textContent='⚠ 股數總和 '+fmt(totalSh,0)+' 須等於 '+fmt(p.shares,0);
+    else warnEl.textContent='';
+  }
 }
+
+function onModalSLTierPct2(id,i){
+  var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
+  var pct=parseFloat(val('mslt-pct-'+i));
+  if(pct>0&&el('mslt-sl-'+i)) el('mslt-sl-'+i).value=fmt(p.avgCost*(1-pct/100),4);
+  calcModalSL(id);
+}
+
+function addModalTier(id){
+  var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
+  var container=el('msl-tiers'); if(!container)return;
+  // Count existing tiers
+  var i=0; while(el('mslt-sh-'+i))i++;
+  var newDiv=document.createElement('div');
+  newDiv.className='sltr';
+  newDiv.style.alignItems='center';
+  newDiv.innerHTML=
+    '<div style="width:65px"><label>股數</label><input type="number" id="mslt-sh-'+i+'" value="0" step="1" min="1" style="width:60px"></div>'+
+    '<div style="flex:1"><label>止損價</label><div style="display:flex;gap:4px">'+
+      '<input type="number" step="0.01" id="mslt-sl-'+i+'" value="'+p.sl+'" style="flex:1" oninput="calcModalSL('+id+')">'+
+      '<input type="number" step="0.1" placeholder="%" id="mslt-pct-'+i+'" style="width:52px" oninput="onModalSLTierPct2('+id+','+i+')">'+
+    '</div></div>'+
+    '<div id="mslt-r-'+i+'" style="font-size:10px;min-width:50px;text-align:right;padding-top:14px"></div>'+
+    '<button class="btn R xs" onclick="removeModalTier('+id+','+i+')" style="margin-top:12px">✕</button>';
+  container.appendChild(newDiv);
+  bindModalInput('mslt-sh-'+i,function(){calcModalSL(id);});
+  calcModalSL(id);
+}
+
+function removeModalTier(id,i){
+  var rows=document.querySelectorAll('#msl-tiers .sltr');
+  if(rows.length<=1){alert('至少保留一個止損段');return;}
+  if(rows[i]) rows[i].remove();
+  // Re-index remaining inputs
+  var newRows=document.querySelectorAll('#msl-tiers .sltr');
+  newRows.forEach(function(row,ni){
+    ['sh','sl','pct','r'].forEach(function(k){
+      var old=row.querySelector('[id^="mslt-'+k+'-"]');
+      if(old) old.id='mslt-'+k+'-'+ni;
+    });
+    var btn=row.querySelector('.btn.R.xs');
+    if(btn) btn.setAttribute('onclick','removeModalTier('+id+','+ni+')');
+  });
+  calcModalSL(id);
+}
+
+function splitModalTiers(id){
+  var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
+  // Evenly distribute total shares among existing tiers
+  var i=0, count=0; while(el('mslt-sh-'+i)){count++;i++;}
+  if(count===0)return;
+  var base=Math.floor(p.shares/count), rem=p.shares%count;
+  for(var j=0;j<count;j++){
+    var shEl=el('mslt-sh-'+j);
+    if(shEl) shEl.value=base+(j<rem?1:0);
+  }
+  calcModalSL(id);
+}
+
+function calcSL(id){ calcModalSL(id); } // alias for compatibility
+
 function doSL(id){
-  if(!_slc){alert('請輸入止損價');return;}
   var p=S.pos.find(function(x){return x.id===id;}); if(!p)return;
-  p.sl=_slc.nsl; p.initRisk=Math.abs(toUSD((p.avgCost-_slc.nsl)*p.shares,p.ccy));
-  if(_slc.tiers.length)p.slTiers=_slc.tiers;
+  var tiers=readModalTiers(id);
+  if(tiers.length===0){alert('請輸入至少一個止損段');return;}
+  var totalSh=tiers.reduce(function(s,t){return s+t.shares;},0);
+  if(totalSh!==p.shares){
+    if(!confirm('股數總和 '+fmt(totalSh,0)+' 與持倉 '+fmt(p.shares,0)+' 股不符，仍然確認？'))return;
+  }
+  saveShareTiers(p,tiers);
   lsave(); closeModal(); updateOv(); renderPos();
 }
 function delPos(id){ if(!confirm('刪除此倉位及所有相關記錄？'))return; var p=S.pos.find(function(x){return x.id===id;}); if(p)S.closed=S.closed.filter(function(c){return!(c.tick===p.tick&&c.openDate===p.date);}); S.pos=S.pos.filter(function(x){return x.id!==id;}); lsave(); updateOv(); renderPos(); }
@@ -1253,10 +1414,46 @@ document.addEventListener('click', function(e) {
   if(t.dataset.delhist){delHistEntry(parseInt(t.dataset.delhist));return;}
   if(t.dataset.delclosed){delClosedRec(parseInt(t.dataset.delclosed));return;}
   if(t.dataset.delsnap!==undefined){delSnap(parseInt(t.dataset.delsnap));return;}
-  // inline SL
-  if(t.dataset.applyisl){applyISL(parseInt(t.dataset.applyisl));return;}
-  if(t.dataset.applyislt){var parts=t.dataset.applyislt.split('-');applyISLT(parseInt(parts[0]),parseInt(parts[1]));return;}
-  // tier remove
+  // inline SL (expand panel)
+  if(t.dataset.applyislt){
+    var parts=t.dataset.applyislt.split('-');
+    var posId2=parseInt(parts[0]), idx2=parseInt(parts[1]);
+    var p2=S.pos.find(function(x){return x.id===posId2;}); if(!p2)return;
+    var tiers2=getShareTiers(p2);
+    var newSl=parseFloat((el('islt-'+posId2+'-'+idx2)||{}).value);
+    if(!newSl){alert('請輸入止損價');return;}
+    tiers2[idx2].sl=newSl;
+    saveShareTiers(p2,tiers2);
+    lsave(); updateOv(); renderPos(); return;
+  }
+  if(t.dataset.rmislt){
+    var parts3=t.dataset.rmislt.split('-');
+    var posId3=parseInt(parts3[0]), idx3=parseInt(parts3[1]);
+    var p3=S.pos.find(function(x){return x.id===posId3;}); if(!p3)return;
+    var tiers3=getShareTiers(p3);
+    if(tiers3.length<=1){alert('至少保留一個止損段');return;}
+    tiers3.splice(idx3,1);
+    saveShareTiers(p3,tiers3);
+    lsave(); updateOv(); renderPos(); return;
+  }
+  if(t.dataset.addislt){
+    var posId4=parseInt(t.dataset.addislt);
+    var p4=S.pos.find(function(x){return x.id===posId4;}); if(!p4)return;
+    var tiers4=getShareTiers(p4);
+    tiers4.push({shares:0, sl:p4.sl, pct:0});
+    saveShareTiers(p4,tiers4);
+    lsave(); updateOv(); renderPos(); return;
+  }
+  if(t.dataset.splitislt){
+    var posId5=parseInt(t.dataset.splitislt);
+    var p5=S.pos.find(function(x){return x.id===posId5;}); if(!p5)return;
+    var tiers5=getShareTiers(p5);
+    var base5=Math.floor(p5.shares/tiers5.length), rem5=p5.shares%tiers5.length;
+    tiers5.forEach(function(t5,i5){t5.shares=base5+(i5<rem5?1:0);});
+    saveShareTiers(p5,tiers5);
+    lsave(); updateOv(); renderPos(); return;
+  }
+  // tier remove (new position form)
   if(t.dataset.rmtier!==undefined){rmTier(parseInt(t.dataset.rmtier));return;}
   // main buttons
   var bid = t.id||'';
@@ -1283,15 +1480,32 @@ document.addEventListener('input', function(e) {
   if(id==='n-slp')onSlPct();
   if(id==='n-mkt')onMktChg();
   if(id==='s-ccy'||id==='s-rp'||id==='s-fx'||id==='s-bal'||id==='s-man')readAcctForm();
-  // tier inputs
+  // tier inputs (new position form)
   var tierpct=t.dataset.tierPct; if(tierpct!==undefined){newTiers[parseInt(tierpct)].pct=parseFloat(t.value)||0;calcNew();return;}
   var tiersl=t.dataset.tierSl; if(tiersl!==undefined){newTiers[parseInt(tiersl)].sl=parseFloat(t.value)||0;calcNew();return;}
   var tierpctinput=t.dataset.tierPctinput; if(tierpctinput!==undefined){var px=numVal('n-px'),pct=parseFloat(t.value);if(px>0&&pct>0){newTiers[parseInt(tierpctinput)].sl=px*(1-pct/100);renderTiers();}calcNew();return;}
-  // inline SL
-  var islpct=t.dataset.islpct; if(islpct!==undefined){preISL(parseInt(islpct));return;}
-  var isltpct=t.dataset.isltpct; if(isltpct!==undefined){var parts=isltpct.split('-');preISLT(parseInt(parts[0]),parseInt(parts[1]));return;}
-  if(id.startsWith('isl-')&&!id.startsWith('islp-')&&!id.startsWith('islr-')&&!id.startsWith('islt-')){var pid=parseInt(id.replace('isl-',''));preISL(pid);}
-  if(id.startsWith('islt-')&&!id.startsWith('isltr-')&&!id.startsWith('isltp-')){var parts2=id.replace('islt-','').split('-');preISLT(parseInt(parts2[0]),parseInt(parts2[1]));}
+  // inline SL expand panel - preview R on input change
+  var isltid=t.dataset.isltid; if(isltid){
+    var parts6=isltid.split('-');
+    var posId6=parseInt(parts6[0]), idx6=parseInt(parts6[1]);
+    var p6=S.pos.find(function(x){return x.id===posId6;}); if(!p6)return;
+    var tiers6=getShareTiers(p6);
+    if(tiers6[idx6]){
+      var newSl6=parseFloat(t.value)||0;
+      var rNew=newSl6>0?toUSD((p6.avgCost-newSl6)*tiers6[idx6].shares,p6.ccy)/get1R():0;
+      var resEl6=el('isltr-'+posId6+'-'+idx6);
+      if(resEl6) resEl6.innerHTML='<span class="'+(rNew<=0?'G':'R')+'">'+(rNew<=0?'+':'-')+fmt(Math.abs(rNew),2)+'R</span>';
+    }
+    return;
+  }
+  var isltpct=t.dataset.isltpct; if(isltpct!==undefined){
+    var parts7=isltpct.split('-');
+    var posId7=parseInt(parts7[0]), idx7=parseInt(parts7[1]);
+    var p7=S.pos.find(function(x){return x.id===posId7;}); if(!p7)return;
+    var pct7=parseFloat(t.value);
+    if(pct7>0&&el('islt-'+posId7+'-'+idx7)) el('islt-'+posId7+'-'+idx7).value=fmt(p7.avgCost*(1-pct7/100),4);
+    return;
+  }
 });
 
 document.addEventListener('change', function(e){
