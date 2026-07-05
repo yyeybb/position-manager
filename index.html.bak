@@ -80,32 +80,6 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
 .ch{position:relative;height:200px}
 .clickrow{cursor:pointer}.clickrow:hover td{background:rgba(255,255,255,.015)}
-.ovl{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:300;overflow-y:auto;display:none;padding:env(safe-area-inset-top,10px) 10px 40px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-.ovl.on{display:block}
-.ovlbox{background:var(--card);border:.5px solid var(--bd2);border-radius:var(--r12);padding:14px;max-width:620px;margin:10px auto}
-.ocrsp{display:inline-block;width:13px;height:13px;border:2px solid var(--B);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.imgthumb{max-width:52px;max-height:88px;border-radius:5px;border:.5px solid var(--bd);margin:2px;object-fit:cover;vertical-align:top}
-.hero{background:var(--c2);border-radius:16px;padding:17px;margin-bottom:10px}
-.hero-l{font-size:12px;color:var(--mu);margin-bottom:6px}
-.hero-v{font-size:32px;font-weight:700;line-height:1.05}
-.hero-s{font-size:12px;margin-top:5px;color:var(--mu)}
-.pcard{background:var(--c2);border-radius:14px;padding:13px;margin-bottom:10px}
-.pcard-sub{font-size:11px;color:var(--hi);margin-top:3px}
-.pstat{flex:1;background:var(--bg);border-radius:8px;padding:7px 9px;min-width:0}
-.pstat .l{font-size:11px;color:var(--hi)}
-.pstat .v{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pbtn{flex:1;text-align:center;border:.5px solid var(--bd2);border-radius:9px;padding:11px 0;font-size:12px;background:transparent;color:var(--tx);cursor:pointer;font-weight:600}
-.pbtn:active{opacity:.6}
-.pbtn.G{color:var(--G);border-color:var(--Gbd)}.pbtn.R{color:var(--R);border-color:var(--Rbd)}.pbtn.B{color:var(--B);border-color:var(--Bbd)}
-.ptoggle{text-align:center;padding:9px;margin-top:9px;font-size:11px;color:var(--hi);cursor:pointer;border-top:.5px solid var(--bd)}
-.pcard .exprow{display:none}.pcard .exprow.on{display:block}
-.navfab{flex:1;display:flex;flex-direction:column;align-items:center;margin-top:-24px;background:transparent;border:none;cursor:pointer;padding:0}
-.navfab .fc{width:52px;height:52px;border-radius:50%;background:var(--B);display:flex;align-items:center;justify-content:center;border:4px solid var(--bg)}
-.navfab .fc svg{width:25px;height:25px;stroke:#0b1220;fill:none;stroke-width:2}
-.navfab span{font-size:9px;color:var(--B);margin-top:3px;font-weight:700}
-.gear{background:transparent;border:none;cursor:pointer;color:var(--hi);padding:4px;margin-left:8px}
-.gear svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -116,26 +90,21 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
     <div style="font-size:16px;font-weight:700;color:#f1f5f9">倉位管理</div>
     <div style="font-size:10px;color:var(--hi)" id="hdr-fx">匯率: 手動設定</div>
   </div>
-  <div style="display:flex;align-items:center">
-    <div style="text-align:right">
-      <div style="font-size:12px;font-weight:700;color:var(--A)" id="hdr-1r">1R: —</div>
-      <div style="font-size:10px;color:var(--hi)"><span class="sdot err" id="sdot"></span><span id="stxt">GitHub 未設定</span></div>
-    </div>
-    <button class="gear" data-tab="set" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+  <div style="text-align:right">
+    <div style="font-size:12px;font-weight:700;color:var(--A)" id="hdr-1r">1R: —</div>
+    <div style="font-size:10px;color:var(--hi)"><span class="sdot err" id="sdot"></span><span id="stxt">GitHub 未設定</span></div>
   </div>
 </div>
 
 <!-- HOME -->
 <div id="tab-home" class="panel on">
-  <div class="hero" id="ov-hero"></div>
-  <div class="card"><div class="st">風險總覽</div><div class="g2" id="ov" style="gap:8px"></div></div>
+  <div class="card"><div class="st">風險總覽</div><div class="g4" id="ov"></div></div>
   <div id="home-alts"></div>
   <div class="card">
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
       <button class="tbtn on" data-chart="cumr">累計 R</button>
-      <button class="tbtn" data-chart="weekly">每週盈虧</button>
       <button class="tbtn" data-chart="monthly">月度盈虧</button>
-      <button class="tbtn" data-chart="openr">組合風險</button>
+      <button class="tbtn" data-chart="openr">持倉 R</button>
       <button class="tbtn" data-chart="winrate">勝率</button>
     </div>
     <div class="ch"><canvas id="mc"></canvas></div>
@@ -145,13 +114,6 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
 
 <!-- NEW -->
 <div id="tab-new" class="panel">
-<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-  <div>
-    <div class="st" style="margin:0 0 3px">截圖匯入交易</div>
-    <div style="font-size:10px;color:var(--hi)">上載券商成交／交易詳情截圖，自動辨識後確認即可入賬</div>
-  </div>
-  <button class="btn B" id="btn-import-open" style="white-space:nowrap">📷 選擇截圖</button>
-</div>
 <div class="card">
   <div class="st">新增倉位</div>
   <div class="row" style="grid-template-columns:1fr 1fr 1fr 1fr">
@@ -209,13 +171,24 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
     </div>
   </div>
   <div id="pos-alts"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin:2px 2px 8px">
-    <div class="st" style="margin:0">開倉持倉</div>
-    <button class="btn B xs" data-openimport="1" style="white-space:nowrap">📷 截圖匯入</button>
+  <div class="card" style="overflow-x:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="st" style="margin:0">開倉持倉</div>
+      <div class="g3" id="pos-mini" style="gap:5px"></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:9%">代號</th><th style="width:5%">市場</th>
+        <th style="width:9%">均價</th><th style="width:6%">股數</th>
+        <th style="width:9%">現價</th><th style="width:11%">未實盈虧</th>
+        <th style="width:8%">未實 R</th><th style="width:9%">持倉 R</th>
+        <th style="width:9%">持倉額</th><th style="width:7%">佔倉%</th>
+        <th style="width:7%">日期</th><th>操作</th>
+      </tr></thead>
+      <tbody id="pos-body"></tbody>
+    </table>
+    <div id="pos-empty" style="text-align:center;padding:2rem;color:var(--hi);font-size:12px">尚無開倉持倉</div>
   </div>
-  <div class="g3" id="pos-mini" style="gap:7px;margin-bottom:10px"></div>
-  <div id="pos-body"></div>
-  <div id="pos-empty" style="text-align:center;padding:2rem;color:var(--hi);font-size:12px">尚無開倉持倉</div>
   <div id="modal-area"></div>
   <div class="card" style="overflow-x:auto;margin-top:6px">
     <div class="st">歷史持倉</div>
@@ -294,28 +267,7 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
     </div>
   </div>
   <div class="card">
-    <div class="st">股價自動更新 — 內建 API（推薦）</div>
-    <div style="font-size:11px;color:var(--hi);margin-bottom:8px;line-height:1.7">
-      直接依你的持倉代號自動抓取股價，無需 Google Sheets。<br>
-      <b>Twelve Data</b>：免費註冊（<code style="background:var(--c2);padding:1px 5px;border-radius:3px">twelvedata.com</code>），涵蓋美股與港股（HKEX），每日 800 次。<br>
-      <b>Finnhub</b>：免費（<code style="background:var(--c2);padding:1px 5px;border-radius:3px">finnhub.io</code>），穩定但免費版只支援美股。
-    </div>
-    <div class="g3" style="align-items:end;margin-bottom:6px">
-      <div><label>供應商</label><select id="s-pfprov"><option value="twelvedata">Twelve Data（美股＋港股）</option><option value="finnhub">Finnhub（美股）</option></select></div>
-      <div><label>自動更新間隔</label><select id="s-pfint"><option value="0">停用</option><option value="5">每 5 分鐘</option><option value="15" selected>每 15 分鐘</option><option value="30">每 30 分鐘</option><option value="60">每 60 分鐘</option></select></div>
-      <div style="display:flex;gap:5px"><button class="btn G" id="btn-pffetch" style="flex:1">立即更新</button><button class="btn" id="btn-pfsave">儲存</button></div>
-    </div>
-    <div class="row" style="grid-template-columns:1fr;margin-bottom:6px">
-      <div><label>API Key</label><input type="password" id="s-pfkey" placeholder="貼上供應商的 API Key"></div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <span id="pf-status" style="font-size:11px;color:var(--hi)">尚未設定</span>
-      <span id="pf-lastupdate" style="font-size:11px;color:var(--hi)"></span>
-    </div>
-    <div id="pf-preview" style="font-size:11px;color:var(--hi)"></div>
-  </div>
-  <div class="card">
-    <div class="st">股價自動更新 — Google Sheets（備用）</div>
+    <div class="st">股價自動更新 — Google Sheets</div>
     <div style="font-size:11px;color:var(--hi);margin-bottom:8px;line-height:1.7">
       在 Google Sheets 用 GOOGLEFINANCE 函數抓取股價，發布為 CSV 後貼上網址。<br>
       美股格式：<code style="background:var(--c2);padding:1px 5px;border-radius:3px">=GOOGLEFINANCE("AAPL","price")</code>&nbsp;
@@ -343,32 +295,6 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
       <div style="padding-top:1.3rem;font-size:11px;color:var(--hi)" id="gs-lastupdate"></div>
     </div>
     <div id="gs-preview" style="font-size:11px;color:var(--hi)"></div>
-  </div>
-  <div class="card">
-    <div class="st">截圖匯入 OCR</div>
-    <div style="margin-bottom:8px">
-      <label>辨識引擎</label>
-      <div style="display:flex;gap:5px">
-        <button class="tbtn" data-ocreng="local">本機（離線）</button>
-        <button class="tbtn" data-ocreng="cloud">雲端（較準）</button>
-      </div>
-    </div>
-    <div id="ocr-local-note" style="font-size:11px;color:var(--hi);margin-bottom:8px;line-height:1.7;display:none">
-      本機辨識完全在你的裝置上運行，圖片不會離開手機，可離線使用。首次使用需連網下載中文語言檔（數 MB），之後會快取。採用繁中＋英文，並會自動為深色截圖反色以提升準確度。
-    </div>
-    <div id="ocr-cloud-wrap" style="display:none">
-      <div style="font-size:11px;color:var(--hi);margin-bottom:8px;line-height:1.7">
-        雲端辨識較準確，但截圖會上傳到 OCR.space 處理，需連網。到 <code style="background:var(--c2);padding:1px 5px;border-radius:3px">ocr.space/ocrapi</code> 免費註冊取得 API Key。留空則使用示範金鑰（有每日限額）。
-      </div>
-      <div class="row" style="grid-template-columns:1fr auto;align-items:end">
-        <div><label>OCR API Key</label><input type="password" id="s-ocrkey" placeholder="K8xxxxxxxxxx"></div>
-        <div><label>雲端語言</label><select id="s-ocrlang"><option value="cht">繁中</option><option value="chs">简中</option><option value="eng">English</option></select></div>
-      </div>
-    </div>
-    <div class="acts">
-      <button class="btn B" id="btn-ocrsave">儲存</button>
-      <span id="ocr-st" style="font-size:11px;color:var(--hi);align-self:center"></span>
-    </div>
   </div>
   <div class="card">
     <div class="st">GitHub 同步</div>
@@ -403,21 +329,16 @@ td{padding:6px 5px;border-bottom:.5px solid rgba(255,255,255,.035);color:var(--t
   <button class="nb" data-tab="new" id="nav-new">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>新增
   </button>
-  <button class="navfab" data-openimport="1" aria-label="截圖匯入">
-    <span class="fc"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
-    <span>截圖匯入</span>
-  </button>
   <button class="nb" data-tab="pos" id="nav-pos">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>持倉
   </button>
   <button class="nb" data-tab="pnl" id="nav-pnl">
     <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>收益
   </button>
+  <button class="nb" data-tab="set" id="nav-set">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>設定
+  </button>
 </nav>
-
-<!-- SCREENSHOT IMPORT OVERLAY -->
-<div class="ovl" id="imp-overlay"></div>
-<input type="file" id="imp-file" accept="image/*" multiple style="display:none">
 
 <script>
 // ── State ──────────────────────────────────────────────
@@ -425,9 +346,7 @@ var S = {
   acct: { ccy:'HKD', rPct:1, fx:7.845, mode:'auto', manualVal:0, snaps:[{date:'',bal:500000}] },
   pos:[], closed:[], history:[],
   gh:{ repo:'' },
-  gs:{ url:'', interval:15 },
-  ocr:{ engine:'local', lang:'cht' },
-  price:{ provider:'twelvedata', interval:15 }
+  gs:{ url:'', interval:15 }
 };
 var MC=null, PC=null, curChart='cumr', pnlCcy='HKD';
 var newTiers=[], newCalc=null, addMode='r';
@@ -456,8 +375,6 @@ function lload(){
     if(p.history) S.history = p.history;
     if(p.gh) S.gh = { repo: p.gh.repo||'' }; // only restore repo, not token
     if(p.gs) S.gs = p.gs;
-    if(p.ocr) S.ocr = Object.assign({}, S.ocr, p.ocr);
-    if(p.price) S.price = Object.assign({}, S.price, p.price);
     // Migrate old token if it was accidentally stored in S
     if(p.gh && p.gh.token && !tkGet()) { tkSet(p.gh.token); }
   }catch(e){}
@@ -581,23 +498,11 @@ function updateOv(){
   var tRisk=S.pos.reduce(function(s,p){return s+Math.max(0,posInfo(p).riskUSD);},0);
   var tU=S.pos.reduce(function(s,p){return s+posInfo(p).unrealUSD;},0);
   var h3=S.pos.filter(function(p){return posInfo(p).unrealR>=3;}).length;
-  // Hero: total PnL (賬面 + 已實現)
-  var snapH=latestSnap();
-  var initUSD=S.acct.ccy==='HKD'?snapH.bal/S.acct.fx:snapH.bal;
-  var realUSD=S.closed.reduce(function(s,c){return s+c.pnlUSD;},0);
-  var pnlUSD=nowUSD-initUSD, pnlPct=initUSD>0?pnlUSD/initUSD*100:0;
-  var mult=S.acct.ccy==='HKD'?S.acct.fx:1, sym=S.acct.ccy==='HKD'?'HK$':'US$', dec=S.acct.ccy==='HKD'?0:2;
-  function sgn(v){ return (v>=0?'+':'−')+sym+fmt(Math.abs(v)*mult,dec); }
-  var heroEl=el('ov-hero');
-  if(heroEl) heroEl.innerHTML=
-    '<div class="hero-l">總盈虧 · 賬面 ＋ 已實現</div>'+
-    '<div class="hero-v" style="color:'+(pnlUSD>=0?'var(--G)':'var(--R)')+'">'+sgn(pnlUSD)+'</div>'+
-    '<div class="hero-s">'+(pnlPct>=0?'▲ +':'▼ ')+fmt(pnlPct,1)+'% ｜ 賬面 <span style="color:'+(tU>=0?'var(--G)':'var(--R)')+'">'+sgn(tU)+'</span> ｜ 已實現 <span style="color:'+(realUSD>=0?'var(--G)':'var(--R)')+'">'+sgn(realUSD)+'</span></div>';
   el('ov').innerHTML=
-    met('組合風險',fmt(Math.abs(tR),2)+'R',tR>=0?'G':'R')+
-    met('賬面賺蝕',fmt(tU*mult,0)+' '+S.acct.ccy,tU>=0?'G':'R')+
-    met('總風險',fmt(tRisk*mult,0)+' '+S.acct.ccy,'R')+
-    met('達標 3R',''+h3,'G');
+    met('持倉 R',fmt(Math.abs(tR),2)+'R',tR>=0?'G':'R')+
+    met('總風險',fmt(tRisk*(S.acct.ccy==='HKD'?S.acct.fx:1),0)+' '+S.acct.ccy,'R')+
+    met('未實現',fmt(tU*(S.acct.ccy==='HKD'?S.acct.fx:1),0)+' '+S.acct.ccy,tU>=0?'G':'R')+
+    met('達 3R',''+h3,'G');
   var alts=el('home-alts'); alts.innerHTML='';
   S.pos.forEach(function(p){
     var info=posInfo(p);
@@ -706,7 +611,7 @@ function renderPos(){
   });
   var tR=S.pos.reduce(function(s,p){return s+posInfo(p).r;},0);
   var tU=S.pos.reduce(function(s,p){return s+posInfo(p).unrealUSD;},0);
-  el('pos-mini').innerHTML=met('組合風險',fmt(Math.abs(tR),2)+'R',tR>=0?'G':'R')+met('賬面賺蝕',fmt(tU*(S.acct.ccy==='HKD'?S.acct.fx:1),0)+' '+S.acct.ccy,tU>=0?'G':'R')+met('開倉',''+list.length,'B');
+  el('pos-mini').innerHTML=met('持倉 R',fmt(Math.abs(tR),2)+'R',tR>=0?'G':'R')+met('未實現',fmt(tU*(S.acct.ccy==='HKD'?S.acct.fx:1),0)+' '+S.acct.ccy,tU>=0?'G':'R')+met('開倉',''+list.length,'B');
   var body=el('pos-body'),empty=el('pos-empty');
   if(!list.length){body.innerHTML='';empty.style.display='block';renderHist();return;}
   empty.style.display='none';
@@ -715,35 +620,31 @@ function renderPos(){
     var posValN=p.avgCost*p.shares,posValUSD=toUSD(posValN,p.ccy);
     var pctAcct=nowUSD>0?posValUSD/nowUSD*100:0;
     var unrealN=p.curPrice>0?(p.curPrice-p.avgCost)*p.shares:null;
+    var rDisp=(info.slAbove?'+':'-')+fmt(Math.abs(info.r),2)+'R';
     var slLbl=(p.slTiers&&p.slTiers.length)?'分倉':fmt(p.sl,2);
     var curCls=p.curPrice>0?(p.curPrice>=p.avgCost?'G':'R'):'';
     var uRDisp=p.curPrice>0?((info.unrealR>=0?'+':'')+fmt(info.unrealR,2)+'R'):'—';
-    var pnlCls=unrealN!==null?(unrealN>=0?'G':'R'):'';
-    var mktTxt=p.mkt==='HK'?'港股':'美股';
-    return '<div class="pcard">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px">'+
-        '<div style="min-width:0">'+
-          '<div style="font-size:16px;font-weight:700;color:#f1f5f9">'+p.tick+' <span class="badge '+(p.mkt==='HK'?'bA':'bB')+'">'+mktTxt+'</span></div>'+
-          '<div class="pcard-sub">持有 '+fmt(p.shares,0)+' 股 · 均價 '+fmt(p.avgCost,3)+' '+p.ccy+(p.note?' · '+p.note:'')+'</div>'+
-        '</div>'+
-        '<div style="text-align:right;white-space:nowrap;padding-left:8px">'+
-          '<div style="font-size:19px;font-weight:700" class="mv '+pnlCls+'">'+(unrealN!==null?money(unrealN,p.ccy):'—')+'</div>'+
-          '<div style="font-size:11px" class="'+(p.curPrice>0?(info.unrealR>=0?'G':'R'):'')+'">賬面 '+uRDisp+'</div>'+
-        '</div>'+
-      '</div>'+
-      '<div style="display:flex;gap:6px;margin-bottom:11px">'+
-        '<div class="pstat"><div class="l">現價</div><div class="v '+curCls+'">'+(p.curPrice>0?fmt(p.curPrice,3):'—')+'</div></div>'+
-        '<div class="pstat"><div class="l">止損</div><div class="v">'+slLbl+'</div></div>'+
-        '<div class="pstat"><div class="l">佔倉</div><div class="v '+(pctAcct>30?'R':'')+'">'+fmt(pctAcct,0)+'%</div></div>'+
-      '</div>'+
-      '<div style="display:flex;gap:7px">'+
-        '<button class="pbtn G" data-modal="add" data-posid="'+p.id+'">加倉</button>'+
-        '<button class="pbtn R" data-modal="red" data-posid="'+p.id+'">減倉</button>'+
-        '<button class="pbtn B" data-modal="cur" data-posid="'+p.id+'">更新現價</button>'+
-      '</div>'+
-      '<div class="ptoggle" data-expid="'+p.id+'">詳情 · 止損管理 ⌄</div>'+
-      '<div class="exprow" id="exp-'+p.id+'"><div class="expinner" id="expi-'+p.id+'">'+buildExpand(p)+'</div></div>'+
-    '</div>';
+    return '<tr class="clickrow" data-expid="'+p.id+'">'+
+      '<td><strong>'+p.tick+'</strong>'+(p.note?'<br><span style="font-size:9px;color:var(--hi)">'+p.note+'</span>':'')+'</td>'+
+      '<td><span class="badge '+(p.mkt==='HK'?'bA':'bB')+'">'+p.mkt+'</span></td>'+
+      '<td>'+fmt(p.avgCost,3)+'<br><span style="font-size:9px;color:var(--hi)">'+p.ccy+'</span></td>'+
+      '<td>'+fmt(p.shares,0)+'</td>'+
+      '<td class="'+curCls+'">'+(p.curPrice>0?fmt(p.curPrice,3):'—')+'</td>'+
+      '<td class="'+(unrealN!==null?(unrealN>=0?'G':'R'):'')+'">'+( unrealN!==null?money(unrealN,p.ccy):'—')+'</td>'+
+      '<td class="'+(p.curPrice>0?(info.unrealR>=0?'G':'R'):'')+'">'+uRDisp+'</td>'+
+      '<td class="'+(info.slAbove?'G':'R')+'" style="font-weight:700">'+rDisp+'<br><span style="font-size:9px;font-weight:400;color:var(--hi)">'+slLbl+'</span></td>'+
+      '<td>'+money(posValN,p.ccy)+'</td>'+
+      '<td class="'+(pctAcct>30?'R':'B')+'">'+fmt(pctAcct,1)+'%</td>'+
+      '<td style="font-size:10px;color:var(--hi)">'+p.date+'</td>'+
+      '<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+
+        '<button class="btn B xs" data-modal="cur" data-posid="'+p.id+'">現價</button>'+
+        '<button class="btn G xs" data-modal="add" data-posid="'+p.id+'">加</button>'+
+        '<button class="btn R xs" data-modal="red" data-posid="'+p.id+'">減</button>'+
+        '<button class="btn A xs" data-modal="sl" data-posid="'+p.id+'">止損</button>'+
+        '<button class="btn R xs" data-delpos="'+p.id+'">✕</button>'+
+      '</div></td></tr>'+
+      '<tr class="exprow" id="exp-'+p.id+'"><td class="expcell" colspan="12">'+
+        '<div class="expinner" id="expi-'+p.id+'">'+buildExpand(p)+'</div></td></tr>';
   }).join('');
   renderHist();
 }
@@ -759,11 +660,10 @@ function buildExpand(p){
       '<button class="btn R xs" data-delcllot="'+p.id+'" data-cllotidx="'+i+'">✕</button></div>';
   }).join('');
   var slH=buildInlineSL(p);
-  return '<div class="g3" style="margin-bottom:8px">'+met('目標('+p.rr+'R)',fmt(p.tp,2),'G')+met('組合風險',(info.slAbove?'+':'-')+fmt(Math.abs(info.r),2)+'R',info.slAbove?'G':'R')+met('初始風險',money(p.initRisk*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy==='HKD'?'HKD':'USD'),'R')+'</div>'+
+  return '<div class="g3" style="margin-bottom:8px">'+met('目標('+p.rr+'R)',fmt(p.tp,2),'G')+met('持倉 R',(info.slAbove?'+':'-')+fmt(Math.abs(info.r),2)+'R',info.slAbove?'G':'R')+met('初始風險',money(p.initRisk*(S.acct.ccy==='HKD'?S.acct.fx:1),S.acct.ccy==='HKD'?'HKD':'USD'),'R')+'</div>'+
     '<div style="margin-bottom:8px"><div class="st">止損位管理</div>'+slH+'</div>'+
     '<div style="margin-bottom:6px"><div class="st">加倉記錄</div>'+(lotsH||'<div style="color:var(--hi);font-size:11px">無</div>')+'</div>'+
-    (clH?'<div style="margin-bottom:8px"><div class="st">減倉記錄</div>'+clH+'</div>':'')+
-    '<div style="margin-top:6px;text-align:right"><button class="btn R xs" data-delpos="'+p.id+'">刪除此持倉</button></div>';
+    (clH?'<div><div class="st">減倉記錄</div>'+clH+'</div>':'');
 }
 function buildInlineSL(p){
   // Convert existing tiers to share-based format for display
@@ -1138,7 +1038,7 @@ function renderPnL(){
   var avgR=S.closed.length?totR/S.closed.length:0;
   el('pnl-sum').innerHTML=met('總實現盈虧',pnlFmt(totPnl),totPnl>=0?'G':'R')+met('總 R',fmt(totR,2)+'R',totR>=0?'G':'R')+met('勝率',(S.closed.length?fmt(totWin/S.closed.length*100,1):0)+'%','B')+met('平均 R',fmt(avgR,2)+'R',avgR>=0?'G':'R');
   var openU=S.pos.reduce(function(s,p){return s+posInfo(p).unrealUSD;},0),openR=S.pos.reduce(function(s,p){return s+posInfo(p).unrealR;},0);
-  el('open-sum').innerHTML=met('賬面賺蝕',pnlFmt(openU),openU>=0?'G':'R')+met('賬面 R',fmt(openR,2)+'R',openR>=0?'G':'R');
+  el('open-sum').innerHTML=met('未實現',pnlFmt(openU),openU>=0?'G':'R')+met('未實現 R',fmt(openR,2)+'R',openR>=0?'G':'R');
   el('closed-sum').innerHTML=met('已實現',pnlFmt(totPnl),totPnl>=0?'G':'R')+met('已實現 R',fmt(totR,2)+'R',totR>=0?'G':'R');
   var months={};
   S.closed.forEach(function(c){var m=ymm(c.closeDate);if(!months[m])months[m]={pnl:0,r:0,win:0,total:0};months[m].pnl+=c.pnlUSD;months[m].r+=c.rRealized;months[m].total++;if(c.rRealized>0)months[m].win++;});
@@ -1155,101 +1055,7 @@ function buildCumR(){ var s=S.closed.slice().sort(function(a,b){return a.closeDa
 function buildMonthly(){ var m={};S.closed.forEach(function(c){var k=ymm(c.closeDate);if(!m[k])m[k]=0;m[k]+=c.pnlUSD;});var keys=Object.keys(m).sort(),mult=pnlCcy==='HKD'?S.acct.fx:1;return{type:'bar',data:{labels:keys,datasets:[{data:keys.map(function(k){return parseFloat((m[k]*mult).toFixed(0));}),backgroundColor:keys.map(function(k){return m[k]>=0?'rgba(74,222,128,.55)':'rgba(248,113,113,.55)';}),borderColor:keys.map(function(k){return m[k]>=0?'#4ade80':'#f87171';}),borderWidth:1}]},options:Object.assign({},CO,{plugins:Object.assign({},CO.plugins,{tooltip:Object.assign({},CO.plugins.tooltip,{callbacks:{label:function(c){return(pnlCcy==='HKD'?'HK$':'US$')+fmt(c.parsed.y,0);}}})})})} }
 function buildOpenR(){ var L=S.pos.map(function(p){return p.tick;}),D=S.pos.map(function(p){return parseFloat(fmt(Math.abs(posInfo(p).r),2));}),C=S.pos.map(function(p){return posInfo(p).slAbove?'rgba(74,222,128,.7)':'rgba(248,113,113,.7)';}); return{type:'bar',data:{labels:L,datasets:[{data:D,backgroundColor:C,borderRadius:4}]},options:Object.assign({},CO,{indexAxis:'y',plugins:Object.assign({},CO.plugins,{tooltip:Object.assign({},CO.plugins.tooltip,{callbacks:{label:function(c){return c.parsed.x.toFixed(2)+'R';}}})})})} }
 function buildWinrate(){ var m={};S.closed.forEach(function(c){var k=ymm(c.closeDate);if(!m[k])m[k]={w:0,t:0};m[k].t++;if(c.rRealized>0)m[k].w++;});var keys=Object.keys(m).sort();return{type:'line',data:{labels:keys,datasets:[{data:keys.map(function(k){return parseFloat((m[k].w/m[k].t*100).toFixed(1));}),borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,.07)',tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#fbbf24'}]},options:Object.assign({},CO,{scales:Object.assign({},CO.scales,{y:Object.assign({},CO.scales.y,{min:0,max:100,ticks:Object.assign({},CO.scales.y.ticks,{callback:function(v){return v+'%';}})})}),plugins:Object.assign({},CO.plugins,{tooltip:Object.assign({},CO.plugins.tooltip,{callbacks:{label:function(c){return c.parsed.y.toFixed(1)+'%';}}})})})} }
-function isoWeek(dstr){ var dt=new Date(dstr+'T00:00:00'); if(isNaN(dt))return dstr; var d=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); var day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); var firstThu=new Date(Date.UTC(d.getUTCFullYear(),0,4)); var week=1+Math.round(((d-firstThu)/86400000-3+((firstThu.getUTCDay()+6)%7))/7); return d.getUTCFullYear()+'-W'+('0'+week).slice(-2); }
-function buildWeekly(){ var m={};S.closed.forEach(function(c){var k=isoWeek(c.closeDate);if(!m[k])m[k]=0;m[k]+=c.rRealized;});var keys=Object.keys(m).sort();return{type:'bar',data:{labels:keys.map(function(k){return k.replace('-','·');}),datasets:[{data:keys.map(function(k){return parseFloat(m[k].toFixed(2));}),backgroundColor:keys.map(function(k){return m[k]>=0?'rgba(74,222,128,.55)':'rgba(248,113,113,.55)';}),borderColor:keys.map(function(k){return m[k]>=0?'#4ade80':'#f87171';}),borderWidth:1}]},options:Object.assign({},CO,{plugins:Object.assign({},CO.plugins,{tooltip:Object.assign({},CO.plugins.tooltip,{callbacks:{label:function(c){return(c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(2)+'R';}}})})})} }
-function updateMC(){ var ctx=el('mc').getContext('2d'); if(MC){MC.destroy();MC=null;} if(!S.closed.length&&curChart!=='openr')return; if(curChart==='openr'&&!S.pos.length)return; var cfg=curChart==='cumr'?buildCumR():curChart==='weekly'?buildWeekly():curChart==='monthly'?buildMonthly():curChart==='openr'?buildOpenR():buildWinrate(); MC=new Chart(ctx,cfg); }
-
-// ── Built-in Price Feed (Twelve Data / Finnhub) ────────
-// API keys stored separately per provider, never inside S (so GitHub sync never uploads them)
-function pfKeyName(prov){ return '_pmpricekey_'+prov; }
-function pfKeyGet(prov){ try{ return localStorage.getItem(pfKeyName(prov))||''; }catch(e){ return ''; } }
-function pfKeySet(prov,v){ try{ localStorage.setItem(pfKeyName(prov),v); }catch(e){} }
-function pfProvider(){ return (S.price&&S.price.provider)||'twelvedata'; }
-function pfProvName(p){ return p==='finnhub'?'Finnhub':'Twelve Data'; }
-var pfTimer=null;
-
-function pfSave(){
-  S.price=S.price||{};
-  S.price.provider=val('s-pfprov')||'twelvedata';
-  S.price.interval=parseInt(val('s-pfint'))||0;
-  pfKeySet(S.price.provider,(val('s-pfkey')||'').trim());
-  lsave();
-  pfStartTimer();
-  var st=el('pf-status');
-  if(st){ st.textContent=pfKeyGet(S.price.provider)?'已儲存 · '+pfProvName(S.price.provider):'已儲存（未填 Key）'; st.style.color=pfKeyGet(S.price.provider)?'var(--G)':'var(--A)'; }
-}
-function pfStartTimer(){
-  if(pfTimer){ clearInterval(pfTimer); pfTimer=null; }
-  var mins=(S.price&&S.price.interval)||0;
-  if(mins>0 && pfKeyGet(pfProvider())){
-    pfTimer=setInterval(function(){ pfFetch(false); }, mins*60000);
-  }
-}
-function pfSymbol(prov, baseTick, mkt){
-  var t=(baseTick||'').toUpperCase();
-  if(mkt==='HK'){
-    var code=t.replace(/\D/g,'');
-    if(code.length<4) code=code.padStart(4,'0'); // HKEX 4-digit padding
-    if(prov==='twelvedata') return { symbol:code, exchange:'HKEX' };
-    return { symbol:code+'.HK' }; // finnhub style
-  }
-  return { symbol:t };
-}
-function pfQuoteURL(prov, sym, key){
-  if(prov==='twelvedata'){
-    var u='https://api.twelvedata.com/price?symbol='+encodeURIComponent(sym.symbol);
-    if(sym.exchange) u+='&exchange='+encodeURIComponent(sym.exchange);
-    return u+'&apikey='+encodeURIComponent(key);
-  }
-  return 'https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(sym.symbol)+'&token='+encodeURIComponent(key);
-}
-function pfParsePrice(prov, j){
-  if(prov==='twelvedata'){
-    if(j && j.price!=null){ var p=parseFloat(j.price); return (p>0)?p:null; }
-    return null; // error objects have {status:'error', message:...}
-  }
-  if(j && j.c!=null){ var c=parseFloat(j.c); return (c>0)?c:null; }
-  return null;
-}
-function pfFetch(showAlert){
-  showAlert = showAlert!==false;
-  var prov=pfProvider(), key=pfKeyGet(prov);
-  if(!key){ if(showAlert) alert('請先填入 '+pfProvName(prov)+' 的 API Key 並儲存'); return; }
-  if(!S.pos.length){ if(showAlert) alert('尚無持倉可更新'); return; }
-  var st=el('pf-status'); if(st){ st.innerHTML='更新中…'; st.style.color='var(--A)'; }
-  var uniq={};
-  S.pos.forEach(function(p){ var b=(p.baseTick||p.tick.replace(/\s*\d+$/,'')).toUpperCase(); var k=b+'|'+p.mkt; if(!uniq[k]) uniq[k]={base:b,mkt:p.mkt}; });
-  var keys=Object.keys(uniq), results={}, fail=[];
-  var chain=Promise.resolve();
-  keys.forEach(function(k){
-    chain=chain.then(function(){
-      var u=uniq[k], sym=pfSymbol(prov,u.base,u.mkt);
-      return fetch(pfQuoteURL(prov,sym,key)).then(function(r){ return r.json(); }).then(function(j){
-        var price=pfParsePrice(prov,j);
-        if(price){ results[k]=price; } else { fail.push(u.base); }
-      }).catch(function(){ fail.push(u.base); });
-    });
-  });
-  chain.then(function(){
-    var updated=0;
-    S.pos.forEach(function(p){ var k=(p.baseTick||p.tick.replace(/\s*\d+$/,'')).toUpperCase()+'|'+p.mkt; if(results[k]){ p.curPrice=results[k]; updated++; } });
-    lsave();
-    var now=new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'});
-    if(st){ st.innerHTML='✓ 已更新 '+updated+'/'+S.pos.length+' 個持倉'+(fail.length?'（未找到: '+fail.join(', ')+'）':''); st.style.color=fail.length?'var(--A)':'var(--G)'; }
-    var lu=el('pf-lastupdate'); if(lu) lu.textContent='上次更新: '+now;
-    var pv=el('pf-preview');
-    if(pv){
-      pv.innerHTML='<div class="st" style="margin-top:8px">價格預覽</div>'+keys.map(function(k){
-        var u=uniq[k], pr=results[k];
-        return '<div style="display:flex;gap:10px;padding:3px 0;font-size:11px;border-bottom:.5px solid var(--bd)">'+
-          '<span style="width:72px;font-weight:700">'+u.base+'</span>'+
-          '<span style="width:36px;color:var(--hi)">'+u.mkt+'</span>'+
-          '<span style="color:'+(pr?'var(--G)':'var(--R)')+'">'+(pr?fmt(pr,3):'未找到')+'</span></div>';
-      }).join('');
-    }
-    updateOv(); if(el('tab-pos').classList.contains('on')) renderPos();
-  });
-}
+function updateMC(){ var ctx=el('mc').getContext('2d'); if(MC){MC.destroy();MC=null;} if(!S.closed.length&&curChart!=='openr')return; if(curChart==='openr'&&!S.pos.length)return; var cfg=curChart==='cumr'?buildCumR():curChart==='monthly'?buildMonthly():curChart==='openr'?buildOpenR():buildWinrate(); MC=new Chart(ctx,cfg); }
 
 // ── GitHub ────────────────────────────────────────────
 // ── Google Sheets Price Feed ───────────────────────────
@@ -1579,335 +1385,9 @@ function applyISLT(posId,i){
   lsave(); updateOv(); renderPos();
 }
 
-// ── Screenshot Import (OCR) ────────────────────────────
-// OCR API key stored separately from S (same pattern as GitHub token)
-function ocrKeyGet(){ try{ return localStorage.getItem('_pmocrkey')||''; }catch(e){ return ''; } }
-function ocrKeySet(v){ try{ localStorage.setItem('_pmocrkey',v); }catch(e){} }
-function ocrSave(){
-  ocrKeySet((val('s-ocrkey')||'').trim());
-  S.ocr = S.ocr || {}; S.ocr.lang = val('s-ocrlang') || 'cht'; lsave();
-  var st = el('ocr-st'); if(st){ st.textContent='✓ 已儲存'; st.style.color='var(--G)'; }
-}
-function setOcrEngine(engine){
-  S.ocr = S.ocr || {}; S.ocr.engine = engine; lsave();
-  document.querySelectorAll('[data-ocreng]').forEach(function(b){ b.classList.toggle('on', b.dataset.ocreng===engine); });
-  var ln=el('ocr-local-note'), cw=el('ocr-cloud-wrap');
-  if(ln) ln.style.display = engine==='local'?'block':'none';
-  if(cw) cw.style.display = engine==='cloud'?'block':'none';
-}
-
-// Lazy-load Tesseract.js only when local OCR is first used
-var _tessLoading=null;
-function loadTesseract(){
-  if(window.Tesseract) return Promise.resolve();
-  if(_tessLoading) return _tessLoading;
-  _tessLoading=new Promise(function(res,rej){
-    var s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-    s.onload=function(){ res(); };
-    s.onerror=function(){ _tessLoading=null; rej(new Error('無法載入本機 OCR 元件')); };
-    document.head.appendChild(s);
-  });
-  return _tessLoading;
-}
-// Upscale + grayscale + auto-invert (dark mode) + contrast boost for better local OCR
-function preprocessForLocal(file){
-  return new Promise(function(resolve,reject){
-    var img=new Image(), url=URL.createObjectURL(file);
-    img.onload=function(){
-      var w=img.naturalWidth, h=img.naturalHeight;
-      var sc=2200/Math.max(w,h); if(sc>2) sc=2;
-      var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
-      var c=document.createElement('canvas'); c.width=cw; c.height=ch;
-      var ctx=c.getContext('2d'); ctx.drawImage(img,0,0,cw,ch);
-      try{
-        var im=ctx.getImageData(0,0,cw,ch), d=im.data, sum=0, n=d.length/4;
-        for(var i=0;i<d.length;i+=4){ sum+=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114; }
-        var dark=(sum/n)<128;
-        for(var j=0;j<d.length;j+=4){
-          var g=d[j]*0.299+d[j+1]*0.587+d[j+2]*0.114;
-          if(dark) g=255-g;
-          g=(g-128)*1.25+128; if(g<0)g=0; else if(g>255)g=255;
-          d[j]=d[j+1]=d[j+2]=g;
-        }
-        ctx.putImageData(im,0,0);
-      }catch(err){ /* tainted canvas etc — fall back to raw draw */ }
-      URL.revokeObjectURL(url);
-      resolve(c);
-    };
-    img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('圖片讀取失敗')); };
-    img.src=url;
-  });
-}
-function localStatusText(m){
-  var map={'loading tesseract core':'載入 OCR 核心','initializing tesseract':'初始化','loading language traineddata':'下載語言檔','initialized tesseract':'初始化完成','initializing api':'初始化 API','recognizing text':'辨識文字'};
-  var s=map[m.status]||m.status||'';
-  var pct=(m.progress!=null)?(' '+Math.round(m.progress*100)+'%'):'';
-  return s+pct;
-}
-function ocrLocalFiles(files, st){
-  return loadTesseract().then(function(){
-    return Tesseract.createWorker('chi_tra+eng', 1, {
-      langPath:'https://tessdata.projectnaptha.com/4.0.0',
-      logger:function(m){ if(st&&m&&m.status) st.innerHTML='<span class="ocrsp"></span>'+localStatusText(m); }
-    });
-  }).then(function(worker){
-    var texts=[], chain=Promise.resolve();
-    files.forEach(function(f,idx){
-      chain=chain.then(function(){
-        if(st) st.innerHTML='<span class="ocrsp"></span>辨識圖片 '+(idx+1)+'/'+files.length+' …';
-        return preprocessForLocal(f)
-          .then(function(canvas){ return worker.recognize(canvas); })
-          .then(function(res){ texts.push((res&&res.data&&res.data.text)||''); });
-      });
-    });
-    return chain
-      .then(function(){ return worker.terminate().then(function(){ return texts; }); })
-      .catch(function(err){ try{ worker.terminate(); }catch(e){} throw err; });
-  });
-}
-function ocrCloudFiles(files, st){
-  var texts=[], done=0, chain=Promise.resolve();
-  files.forEach(function(f){
-    chain=chain.then(function(){
-      if(st) st.innerHTML='<span class="ocrsp"></span>雲端辨識中 ('+done+'/'+files.length+') …';
-      return imgFileToDataURL(f,2000).then(ocrDataURL).then(function(txt){
-        texts.push(txt); done++;
-        if(st) st.innerHTML='<span class="ocrsp"></span>雲端辨識中 ('+done+'/'+files.length+') …';
-      });
-    });
-  });
-  return chain.then(function(){ return texts; });
-}
-
-var impParsed=null, impAction='', impRaw='';
-
-function openImport(){
-  var ov=el('imp-overlay'); if(!ov)return;
-  impParsed=null; impAction=''; impRaw='';
-  var engine=(S.ocr&&S.ocr.engine)||'local';
-  var hint = engine==='cloud'
-    ? (!ocrKeyGet() ? '雲端模式：未設定 OCR 金鑰，將使用示範金鑰（有每日限額）。可到「設定」填入免費金鑰。' : '')
-    : '本機模式（離線）：圖片不會上傳。首次使用會連網下載中文語言檔（數 MB），之後可離線使用。';
-  ov.innerHTML='<div class="ovlbox">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
-      '<div class="mtitle" style="margin:0">截圖匯入交易</div>'+
-      '<button class="btn" data-imp="cancel">✕ 關閉</button></div>'+
-    '<div class="msub">選擇一或多張券商成交／交易詳情截圖（同一筆可多張），系統會辨識方向、代號、股數、成交價與日期，供你確認後入賬。</div>'+
-    '<div class="acts" style="margin-top:0"><button class="btn B" data-imp="pick">📷 選擇截圖</button></div>'+
-    (hint?'<div style="font-size:10px;color:var(--A);margin-top:6px">'+hint+'</div>':'')+
-    '<div id="imp-status" style="font-size:12px;color:var(--mu);margin-top:10px"></div>'+
-    '<div id="imp-thumbs" style="margin-top:6px"></div>'+
-    '<div id="imp-review" style="margin-top:6px"></div>'+
-  '</div>';
-  ov.classList.add('on');
-}
-function closeImport(){ var ov=el('imp-overlay'); if(ov){ov.classList.remove('on');ov.innerHTML='';} var f=el('imp-file'); if(f)f.value=''; }
-
-// Downscale image client-side to keep the OCR payload small and legible
-function imgFileToDataURL(file, maxDim){
-  return new Promise(function(resolve,reject){
-    var img=new Image(), url=URL.createObjectURL(file);
-    img.onload=function(){
-      var w=img.naturalWidth, h=img.naturalHeight, sc=Math.min(1, maxDim/Math.max(w,h));
-      var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
-      var c=document.createElement('canvas'); c.width=cw; c.height=ch;
-      c.getContext('2d').drawImage(img,0,0,cw,ch);
-      URL.revokeObjectURL(url);
-      try{ resolve(c.toDataURL('image/jpeg',0.85)); }catch(err){ reject(err); }
-    };
-    img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('圖片讀取失敗')); };
-    img.src=url;
-  });
-}
-function ocrDataURL(dataURL){
-  var fd=new FormData();
-  fd.append('base64Image', dataURL);
-  fd.append('apikey', ocrKeyGet() || 'helloworld');
-  fd.append('language', (S.ocr&&S.ocr.lang) || 'cht');
-  fd.append('OCREngine', '1');
-  fd.append('isOverlayRequired', 'false');
-  fd.append('scale', 'true');
-  return fetch('https://api.ocr.space/parse/image', {method:'POST', body:fd})
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if(j.IsErroredOnProcessing){
-        var m = j.ErrorMessage; if(Array.isArray(m)) m=m.join('; ');
-        throw new Error(m || 'OCR 辨識失敗');
-      }
-      return (j.ParsedResults||[]).map(function(x){return x.ParsedText||'';}).join('\n');
-    });
-}
-function onImportFiles(e){
-  var files=Array.prototype.slice.call(e.target.files||[]);
-  if(!files.length) return;
-  var st=el('imp-status'), th=el('imp-thumbs'), rv=el('imp-review');
-  if(rv) rv.innerHTML='';
-  th.innerHTML=''; files.forEach(function(f){ var u=URL.createObjectURL(f); th.innerHTML+='<img class="imgthumb" src="'+u+'">'; });
-  var engine=(S.ocr&&S.ocr.engine)||'local';
-  st.style.color='var(--mu)';
-  st.innerHTML='<span class="ocrsp"></span>準備辨識 …';
-  var run = engine==='cloud' ? ocrCloudFiles(files,st) : ocrLocalFiles(files,st);
-  run.then(function(texts){
-    impRaw=texts.join('\n---- 圖片分隔 ----\n');
-    impParsed=parseTrade(impRaw);
-    st.style.color='var(--G)'; st.innerHTML='✓ 辨識完成，請核對並選擇動作';
-    showImportReview(impParsed);
-  }).catch(function(err){
-    st.style.color='var(--R)';
-    st.innerHTML='✗ '+err.message+(engine==='cloud'?'（可到「設定」填入 OCR 金鑰後再試）':'（首次使用需連網下載語言檔）');
-  });
-}
-
-// Best-effort field extraction; user confirms/corrects everything in the review form
-function parseTrade(text){
-  var t=(text||'').replace(/\r/g,'');
-  var o={dir:'',code:'',mkt:'',ccy:'',shares:null,price:null,amount:null,date:'',fees:null};
-  if(/賣出|沽出/.test(t)) o.dir='sell';
-  else if(/買入|買/.test(t)) o.dir='buy';
-  if(/USD|美元|美股/.test(t)){ o.ccy='USD'; o.mkt='US'; }
-  else if(/HKD|港元|港股/.test(t)){ o.ccy='HKD'; o.mkt='HK'; }
-  // avg fill price: number with 3+ decimals (e.g. 267.6504)
-  var pm=(t.match(/\d[\d,]*\.\d{3,}/g)||[]).map(function(s){return parseFloat(s.replace(/,/g,''));});
-  if(pm.length) o.price=pm.sort(function(a,b){return b-a;})[0];
-  // total fee from 合計費用 / 費用合計
-  var fm=t.match(/(?:合計費用|費用合計|總費用)[^\d]*(\d+(?:\.\d+)?)/); if(fm) o.fees=parseFloat(fm[1]);
-  // trade amount: largest 2-decimal number, excluding the fee value
-  var am=(t.match(/\d[\d,]*\.\d{2}\b/g)||[]).map(function(s){return parseFloat(s.replace(/,/g,''));});
-  if(am.length){ var amf=am.filter(function(x){return x!==o.fees;}); o.amount=(amf.length?amf:am).sort(function(a,b){return b-a;})[0]; }
-  // shares: derive from amount / price (robust); user can override
-  if(o.amount && o.price){ o.shares=Math.round(o.amount/o.price); }
-  // stock code
-  var stop={USD:1,HKD:1,STP:1,GTC:1,GTD:1,US:1,HK:1,SEC:1,CAT:1,LMT:1,MKT:1,ID:1,NO:1,BUY:1,SELL:1};
-  if(o.mkt==='HK'){ var hk=t.match(/\b(\d{4,5})\b/); if(hk) o.code=hk[1]; }
-  else { var ups=(t.match(/\b[A-Z]{1,5}\b/g)||[]).filter(function(x){return !stop[x];}); if(ups.length) o.code=ups[0]; }
-  // date YYYY/MM/DD or YYYY-MM-DD
-  var dm=t.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if(dm){ o.date=dm[1]+'-'+('0'+dm[2]).slice(-2)+'-'+('0'+dm[3]).slice(-2); }
-  return o;
-}
-
-function showImportReview(d){
-  var box=el('imp-review'); if(!box) return;
-  var posOpts=S.pos.map(function(p){
-    return '<option value="'+p.id+'">'+p.tick+' — '+fmt(p.shares,0)+'股 @'+fmt(p.avgCost,3)+' '+p.ccy+'</option>';
-  }).join('');
-  var dirTxt=d.dir==='sell'?'賣出':d.dir==='buy'?'買入':'未辨識';
-  var dirCol=d.dir==='sell'?'var(--R)':d.dir==='buy'?'var(--G)':'var(--hi)';
-  box.innerHTML=
-    '<div style="border-top:.5px solid var(--bd);padding-top:10px;margin-top:4px">'+
-    '<div class="st">辨識結果 — 截圖方向：<span style="color:'+dirCol+'">'+dirTxt+'</span></div>'+
-    '<div style="margin-bottom:8px"><label>動作（請選擇）</label><div style="display:flex;gap:5px">'+
-      '<button class="tbtn" data-impaction="open">建倉</button>'+
-      '<button class="tbtn" data-impaction="add">加倉</button>'+
-      '<button class="tbtn" data-impaction="reduce">減倉</button></div></div>'+
-    '<div id="imp-target-w" style="display:none;margin-bottom:8px"><label>目標持倉</label>'+
-      '<select id="imp-target">'+(posOpts||'<option value="">（尚無持倉）</option>')+'</select></div>'+
-    '<div class="g3">'+
-      '<div><label>代號</label><input id="imp-code" type="text" value="'+(d.code||'')+'"></div>'+
-      '<div><label>市場</label><select id="imp-mkt"><option value="US"'+(d.mkt!=='HK'?' selected':'')+'>US</option><option value="HK"'+(d.mkt==='HK'?' selected':'')+'>HK</option></select></div>'+
-      '<div><label>貨幣</label><select id="imp-ccy"><option value="USD"'+(d.ccy!=='HKD'?' selected':'')+'>USD</option><option value="HKD"'+(d.ccy==='HKD'?' selected':'')+'>HKD</option></select></div>'+
-    '</div>'+
-    '<div class="g3" style="margin-top:5px">'+
-      '<div><label>成交價</label><input id="imp-price" type="number" step="0.0001" value="'+(d.price!=null?d.price:'')+'"></div>'+
-      '<div><label>成交股數</label><input id="imp-shares" type="number" value="'+(d.shares!=null?d.shares:'')+'"></div>'+
-      '<div><label>日期</label><input id="imp-date" type="date" value="'+(d.date||today())+'"></div>'+
-    '</div>'+
-    '<div class="g3" style="margin-top:5px">'+
-      '<div id="imp-sl-w"><label>止損（建倉／加倉，選填）</label><input id="imp-sl" type="number" step="0.01"></div>'+
-      '<div><label>費用（參考）</label><input id="imp-fee" type="number" step="0.01" value="'+(d.fees!=null?d.fees:'')+'"></div>'+
-      '<div><label>備注</label><input id="imp-note" type="text" value="截圖匯入"></div>'+
-    '</div>'+
-    '<div style="margin-top:8px"><button class="btn" data-imp="rawtoggle" style="font-size:10px">顯示原始文字</button>'+
-      '<pre id="imp-raw" style="display:none;white-space:pre-wrap;font-size:10px;color:var(--hi);background:var(--c2);padding:8px;border-radius:6px;margin-top:6px;max-height:180px;overflow:auto"></pre></div>'+
-    '<div id="imp-warn" style="font-size:11px;color:var(--A);margin-top:6px">請先選擇動作（建倉／加倉／減倉）。</div>'+
-    '<div class="acts"><button class="btn G" data-imp="save">確認匯入</button><button class="btn" data-imp="cancel">取消</button></div>'+
-    '</div>';
-  var pre=el('imp-raw'); if(pre) pre.textContent=impRaw;
-}
-function setImpAction(a){
-  impAction=a;
-  document.querySelectorAll('[data-impaction]').forEach(function(b){ b.classList.toggle('on', b.dataset.impaction===a); });
-  var tw=el('imp-target-w'), slw=el('imp-sl-w'), warn=el('imp-warn');
-  if(tw) tw.style.display=(a==='add'||a==='reduce')?'block':'none';
-  if(slw) slw.style.display=(a==='open'||a==='add')?'block':'none';
-  if(warn){
-    if((a==='add'||a==='reduce') && !S.pos.length) warn.textContent='⚠ 尚無持倉，無法加倉／減倉，請先建倉。';
-    else warn.textContent='';
-  }
-  if(a==='add'){ var p=curImpTarget(); var slEl=el('imp-sl'); if(p&&slEl&&!slEl.value) slEl.value=p.sl; }
-}
-function curImpTarget(){ var id=parseInt(val('imp-target')); return S.pos.find(function(x){return x.id===id;}); }
-
-// Commit helpers — mirror doAddPos / doAdd / doRed on the position model
-function impCreate(d){
-  var tick=d.code.toUpperCase();
-  var histSame=S.history.filter(function(h){return h.baseTick===tick;});
-  var num=histSame.length+1, dispTick=num>1?tick+' '+num:tick;
-  var sl=d.sl||0, rr=3;
-  var initRisk = sl>0 ? Math.abs(toUSD((d.price-sl)*d.shares, d.ccy)) : 0;
-  var tp = sl>0 ? d.price+(d.price-sl)*rr : 0;
-  S.pos.push({id:Date.now(),tick:dispTick,baseTick:tick,mkt:d.mkt,ccy:d.ccy,date:d.date,note:d.note,avgCost:d.price,shares:d.shares,sl:sl,initRisk:initRisk,rr:rr,tp:tp,curPrice:0,slTiers:[],
-    lots:[{id:Date.now(),date:d.date,time:'',price:d.price,shares:d.shares,type:'建倉',note:d.note}],closedLots:[]});
-  lsave();
-}
-function impAdd(p,d){
-  var sh=d.shares, apx=d.price, nsl=d.sl||p.sl;
-  var navg=(p.avgCost*p.shares+apx*sh)/(p.shares+sh);
-  var nTR=toUSD((navg-nsl)*(p.shares+sh), p.ccy);
-  p.shares+=sh; p.avgCost=navg; p.sl=nsl; p.initRisk=Math.abs(nTR); p.tp=navg+(navg-nsl)*p.rr;
-  p.lots.push({id:Date.now(),date:d.date,time:'',price:apx,shares:sh,type:'加倉(截圖)',note:d.note});
-  lsave();
-}
-function impReduce(p,d){
-  var sp=d.price, ss=d.shares, cd=d.date;
-  var pnl=(sp-p.avgCost)*ss, pnlUSD=toUSD(pnl,p.ccy), rR=pnlUSD/get1R();
-  var cl={id:Date.now(),date:cd,time:'',sellPrice:sp,shares:ss,avgCost:p.avgCost,pnl:pnl,pnlUSD:pnlUSD,rRealized:rR,type:'減倉'};
-  p.closedLots=p.closedLots||[]; p.closedLots.push(cl);
-  S.closed.push({id:Date.now(),tick:p.tick,baseTick:p.baseTick,mkt:p.mkt,ccy:p.ccy,openDate:p.date,closeDate:cd,avgCost:p.avgCost,sellPrice:sp,shares:ss,pnl:pnl,pnlUSD:pnlUSD,rRealized:rR});
-  var rem=p.shares-ss;
-  if(rem<=0){
-    var relCl=S.closed.filter(function(x){return x.tick===p.tick&&x.openDate===p.date;});
-    var totPnl=relCl.reduce(function(s,x){return s+x.pnlUSD;},0);
-    S.history.push({id:Date.now(),tick:p.tick,baseTick:p.baseTick,mkt:p.mkt,ccy:p.ccy,openDate:p.date,closeDate:cd,avgCost:p.avgCost,totalPnlUSD:totPnl,totalR:totPnl/get1R(),lots:p.lots,closedLots:p.closedLots});
-    S.pos=S.pos.filter(function(x){return x.id!==p.id;});
-  } else { p.shares=rem; p.initRisk=Math.abs(toUSD((p.avgCost-p.sl)*rem,p.ccy)); }
-  lsave();
-}
-
-function doImportSave(){
-  if(!impAction){ alert('請先選擇動作（建倉／加倉／減倉）'); return; }
-  var feeStr=val('imp-fee');
-  var d={
-    code:(val('imp-code')||'').toUpperCase().trim(),
-    mkt:val('imp-mkt'), ccy:val('imp-ccy'),
-    price:parseFloat(val('imp-price'))||0,
-    shares:parseInt(val('imp-shares'))||0,
-    date:val('imp-date')||today(),
-    sl:parseFloat(val('imp-sl'))||0,
-    note:(val('imp-note')||'截圖匯入')+(parseFloat(feeStr)?(' 費用'+feeStr):'')
-  };
-  if(!d.price||!d.shares){ alert('請確認成交價與股數'); return; }
-  if(impAction==='open'){
-    if(!d.code){ alert('請輸入股票代號'); return; }
-    impCreate(d);
-  } else {
-    var p=curImpTarget();
-    if(!p){ alert('請選擇目標持倉'); return; }
-    if(impAction==='add') impAdd(p,d);
-    else {
-      if(d.shares>p.shares && !confirm('賣出股數 '+d.shares+' 大於持倉 '+p.shares+' 股，仍要繼續？')) return;
-      impReduce(p,d);
-    }
-  }
-  closeImport(); updateOv(); goTab('pos');
-}
-
 // ── Global event delegation ────────────────────────────
 document.addEventListener('click', function(e) {
   var t = e.target;
-  // screenshot import FAB
-  if(t.closest('[data-openimport]')){ openImport(); return; }
   // nav
   var tab = t.closest('[data-tab]'); if(tab){goTab(tab.dataset.tab);return;}
   // chart switch
@@ -1918,18 +1398,6 @@ document.addEventListener('click', function(e) {
   var am = t.closest('[data-acctmode]'); if(am){setAcctMode(am.dataset.acctmode);return;}
   // add mode
   var adm = t.closest('[data-addmode]'); if(adm){setAM(adm.dataset.addmode);return;}
-  // screenshot import buttons
-  var impBtn=t.closest('[data-imp]');
-  if(impBtn){
-    var ia=impBtn.dataset.imp;
-    if(ia==='cancel'){ closeImport(); }
-    else if(ia==='pick'){ el('imp-file').click(); }
-    else if(ia==='save'){ doImportSave(); }
-    else if(ia==='rawtoggle'){ var r=el('imp-raw'); if(r){ var sh=r.style.display==='none'; r.style.display=sh?'block':'none'; impBtn.textContent=sh?'隱藏原始文字':'顯示原始文字'; } }
-    return;
-  }
-  var impAct=t.closest('[data-impaction]'); if(impAct){ setImpAction(impAct.dataset.impaction); return; }
-  var ocrEng=t.closest('[data-ocreng]'); if(ocrEng){ setOcrEngine(ocrEng.dataset.ocreng); return; }
   // modal buttons
   if(t.closest('[data-closemodal]')){closeModal();return;}
   var modal = t.closest('[data-modal]'); if(modal&&modal.dataset.posid){e.stopPropagation();showModal(modal.dataset.modal,parseInt(modal.dataset.posid));return;}
@@ -1997,10 +1465,6 @@ document.addEventListener('click', function(e) {
   if(bid==='btn-addsnap'){addSnap();return;}
   if(bid==='btn-gsfetch'){gsFetch(true);return;}
   if(bid==='btn-gssave'){gsSave();return;}
-  if(bid==='btn-pffetch'){pfFetch(true);return;}
-  if(bid==='btn-pfsave'){pfSave();return;}
-  if(bid==='btn-import-open'){openImport();return;}
-  if(bid==='btn-ocrsave'){ocrSave();return;}
   if(bid==='btn-ghsave'){ghDetail('');ghSave();return;}
   if(bid==='btn-ghload'){ghDetail('');ghLoad();return;}
   if(bid==='btn-ghdiag'){ghDiag();return;}
@@ -2050,8 +1514,6 @@ document.addEventListener('change', function(e){
   if(id==='s-ccy'||id==='s-rp'||id==='s-fx'||id==='s-bal'||id==='s-man')readAcctForm();
   if(id==='n-mkt'||id==='n-ccy'||id==='n-rr')calcNew();
   if(id==='imp-f')doImport(e);
-  if(id==='imp-file')onImportFiles(e);
-  if(id==='s-pfprov'){ var pk=pfKeyGet(val('s-pfprov')); if(el('s-pfkey'))el('s-pfkey').value=pk; }
 });
 
 el('n-tk').addEventListener('blur', function(){ if(val('n-mkt')==='HK')fetchLotSize(); });
@@ -2064,20 +1526,6 @@ el('s-bal').value=snap.bal; el('s-ccy').value=S.acct.ccy; el('s-rp').value=S.acc
 el('s-dt').value=today(); el('n-dt').value=today();
 var _tk=tkGet(); if(_tk)el('s-ghtk').value=_tk;
 if(S.gh.repo)el('s-ghre').value=S.gh.repo;
-var _ock=ocrKeyGet(); if(_ock&&el('s-ocrkey'))el('s-ocrkey').value=_ock;
-if(S.ocr&&S.ocr.lang&&el('s-ocrlang'))el('s-ocrlang').value=S.ocr.lang;
-setOcrEngine((S.ocr&&S.ocr.engine)||'local');
-// Built-in price feed init
-if(S.price){
-  if(el('s-pfprov'))el('s-pfprov').value=S.price.provider||'twelvedata';
-  if(el('s-pfint'))el('s-pfint').value=(S.price.interval!=null?S.price.interval:15);
-}
-var _pfk=pfKeyGet(pfProvider()); if(_pfk&&el('s-pfkey'))el('s-pfkey').value=_pfk;
-if(_pfk){
-  if(el('pf-status')){ el('pf-status').textContent='已設定 · '+pfProvName(pfProvider()); el('pf-status').style.color='var(--G)'; }
-  pfStartTimer();
-  setTimeout(function(){ pfFetch(false); }, 2500); // auto-fetch on open
-}
 // Google Sheets init
 if(S.gs && S.gs.url){
   el('s-gsurl').value = S.gs.url;
